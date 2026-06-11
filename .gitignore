@@ -1,0 +1,7 @@
+.env
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+test_*.php
+Microsoft.Services.Store.winmd

@@ -1,0 +1,514 @@
+<?php
+require_once 'db_config.php';
+
+$today = date('Y-m-d');
+$current_time = date('h:i A');
+$day_name = date('l, F j');
+
+// Get user name
+$stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$user = $stmt->fetch();
+$user_name = $user ? $user['username'] : 'Student';
+
+// Get tasks
+$stmt = $pdo->prepare("SELECT id, title, type, due_date, estimated_hours, priority, status FROM tasks WHERE user_id = ? ORDER BY priority DESC, due_date ASC");
+$stmt->execute([$_SESSION['user_id']]);
+$tasks = $stmt->fetchAll();
+
+// Calculate stats
+$total_tasks = count($tasks);
+$completed_tasks = count(array_filter($tasks, fn($t) => $t['status'] == 'completed'));
+$pending_tasks = $total_tasks - $completed_tasks;
+$completion_rate = $total_tasks > 0 ? round(($completed_tasks / $total_tasks) * 100) : 0;
+
+// Overdue tasks
+$overdue_tasks = array_filter($tasks, function($t) {
+    return $t['status'] != 'completed' && $t['due_date'] < date('Y-m-d');
+});
+
+// Today's schedule
+$stmt = $pdo->prepare("SELECT * FROM study_plan WHERE user_id = ? AND plan_date = ? ORDER BY start_time LIMIT 5");
+$stmt->execute([$_SESSION['user_id'], $today]);
+$today_plan = $stmt->fetchAll();
+
+// Upcoming tasks
+$stmt = $pdo->prepare("SELECT id, title, type, due_date, estimated_hours, priority, status FROM tasks WHERE user_id = ? AND status != 'completed' AND due_date >= ? ORDER BY due_date ASC LIMIT 10");
+$stmt->execute([$_SESSION['user_id'], $today]);
+$upcoming_tasks = $stmt->fetchAll();
+
+// Calculate time left and risk for each task
+$now = time();
+foreach ($upcoming_tasks as &$task) {
+    $due_ts = strtotime($task['due_date']);
+    $diff = $due_ts - $now;
+    $task['days_left'] = max(0, floor($diff / 86400));
+    $task['hours_left'] = max(0, floor($diff / 3600));
+
+    if ($diff <= 0) {
+        $task['risk'] = 'overdue';
+        $task['risk_label'] = 'OVERDUE';
+    } elseif ($diff <= 86400) {
+        $task['risk'] = 'critical';
+        $task['risk_label'] = 'CRITICAL';
+    } elseif ($diff <= 172800) {
+        $task['risk'] = 'high';
+        $task['risk_label'] = 'HIGH RISK';
+    } elseif ($diff <= 432000) {
+        $task['risk'] = 'warning';
+        $task['risk_label'] = 'DUE SOON';
+    } else {
+        $task['risk'] = 'on_track';
+        $task['risk_label'] = floor($diff / 86400) . ' DAYS';
+    }
+}
+unset($task);
+
+// Get this week's study plan
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$week_end = date('Y-m-d', strtotime('sunday this week'));
+$stmt = $pdo->prepare("SELECT * FROM study_plan WHERE user_id = ? AND plan_date >= ? AND plan_date <= ? AND status != 'missed' ORDER BY plan_date, start_time");
+$stmt->execute([$_SESSION['user_id'], $week_start, $week_end]);
+$week_plan = $stmt->fetchAll();
+
+// Get user stats
+$stmt = $pdo->prepare("SELECT * FROM user_stats WHERE user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$user_stats = $stmt->fetch();
+
+// Determine greeting based on hour
+$hour = date('H');
+if ($hour >= 5 && $hour < 12) $greeting = "Good Morning";
+elseif ($hour >= 12 && $hour < 17) $greeting = "Good Afternoon";
+else $greeting = "Good Evening";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudySync | Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <?php require_once 'includes/sidebar.php'; ?>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-header">
+                <div></div>
+                <div class="date-time">
+                    <div class="time"><?= $current_time ?></div>
+                    <div class="date"><?= $day_name ?></div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value"><?= $pending_tasks ?></div>
+                    <div class="stat-label">pending tasks</div>
+                </div>
+                <div class="stat-card" onclick="showPieChart()" style="cursor: pointer;">
+                    <div class="stat-value"><?= $completion_rate ?>%</div>
+                    <div class="stat-label">completion rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><?= number_format($user_stats['total_study_hours'] ?? 0, 1) ?></div>
+                    <div class="stat-label">study hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><?= ($user_stats['current_streak_days'] ?? 0) ?>d</div>
+                    <div class="stat-label">current streak</div>
+                </div>
+            </div>
+
+            <!-- Greeting Section -->
+            <div class="greeting-section" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="greeting-title"><?= $greeting ?>, <?= htmlspecialchars($user_name) ?></div>
+                    <div class="greeting-subtitle">You have <?= $pending_tasks ?> task<?= $pending_tasks != 1 ? 's' : '' ?> due today</div>
+                </div>
+                <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size: 22px; font-weight: 700;"><?= ($user_stats['longest_streak'] ?? 0) ?>d</div>
+                    <div style="font-size: 11px; opacity: 0.8; letter-spacing: 0.3px;">LONGEST STREAK</div>
+                </div>
+            </div>
+
+            <?php if (isset($_GET['plan_generated'])): ?>
+                <div style="padding: 12px 16px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius-sm); color: var(--accent); font-size: 13px; margin-bottom: 20px;">Study plan generated — your schedule is ready below.</div>
+            <?php endif; ?>
+
+            <!-- Weekly Timetable Summary -->
+            <?php if (count($week_plan) > 0): ?>
+                <div class="section-card" style="margin-bottom: 24px;">
+                    <div class="section-header">
+                        <h2>This Week's Timetable</h2>
+                        <a href="calendar.php">View Full Calendar →</a>
+                    </div>
+                    <div style="padding: 16px 24px;">
+                        <?php
+                        $days_short = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        $plan_by_day = [];
+                        foreach ($week_plan as $p) {
+                            $plan_by_day[$p['plan_date']][] = $p;
+                        }
+                        $day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        ?>
+                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
+                            <?php for ($i = 0; $i < 7; $i++):
+                                $date = date('Y-m-d', strtotime("$week_start + $i days"));
+                                $is_today = $date === $today;
+                                $day_plans = $plan_by_day[$date] ?? [];
+                            ?>
+                                <div style="background: <?= $is_today ? 'var(--accent-soft)' : 'var(--bg-primary)' ?>; border-radius: var(--radius-sm); padding: 10px; border: 1px solid <?= $is_today ? 'var(--accent)' : 'var(--border-light)' ?>;">
+                                    <div style="font-size: 11px; font-weight: 600; color: <?= $is_today ? 'var(--accent)' : 'var(--text-muted)' ?>; margin-bottom: 8px; text-align: center;"><?= $days_short[$i] ?> <?= date('j', strtotime($date)) ?></div>
+                                    <?php if (count($day_plans) > 0): ?>
+                                        <?php foreach ($day_plans as $p): ?>
+                                            <div style="font-size: 10px; padding: 4px 6px; background: var(--bg-card); border-radius: 4px; margin-bottom: 4px; border-left: 3px solid var(--accent);">
+                                                <div style="font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><?= htmlspecialchars($p['task_title']) ?></div>
+                                                <div style="color: var(--text-muted);"><?= date('g:i', strtotime($p['start_time'])) ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div style="text-align: center; color: var(--text-muted); font-size: 10px; padding: 8px 0;">—</div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Two Column Layout -->
+            <div class="two-column">
+                <!-- Today's Schedule -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Today's Schedule</h2>
+                        <a href="#" onclick="generatePlan()">View all →</a>
+                    </div>
+                    <div class="timeline">
+                        <?php if(count($today_plan) > 0): ?>
+                            <?php foreach($today_plan as $plan): ?>
+                                <div class="timeline-item">
+                                    <div class="timeline-time"><?= date('g:i A', strtotime($plan['start_time'])) ?></div>
+                                    <div class="timeline-dot"></div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-title"><?= htmlspecialchars($plan['task_title']) ?></div>
+                                        <div class="timeline-meta">Study Session</div>
+                                    </div>
+                                    <button onclick="startSession(<?= $plan['id'] ?>)" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 13px;">▶ Start</button>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <div class="empty-text">No sessions scheduled today</div>
+                                <button onclick="generatePlan()" class="btn-primary" style="margin-top: 16px; padding: 8px 20px;">Generate Plan</button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Upcoming Tasks -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Upcoming Tasks</h2>
+                        <a href="#" onclick="openTaskModal()">Add New →</a>
+                    </div>
+                    <div class="task-list">
+                        <?php if(count($upcoming_tasks) > 0): ?>
+                            <?php foreach($upcoming_tasks as $task):
+                                $type_icons = ['assignment' => '📝', 'exam' => '📋', 'study' => '📖', 'quiz' => '❓', 'project' => '🔨'];
+                                $risk_colors = ['overdue' => 'var(--danger)', 'critical' => 'var(--danger)', 'high' => 'var(--warning)', 'warning' => 'var(--warning)', 'on_track' => 'var(--success)'];
+                                $risk_bg = ['overdue' => 'rgba(239,68,68,0.1)', 'critical' => 'rgba(239,68,68,0.1)', 'high' => 'rgba(245,158,11,0.1)', 'warning' => 'rgba(245,158,11,0.1)', 'on_track' => 'rgba(16,185,129,0.1)'];
+                            ?>
+                                <div class="task-item" style="flex-wrap: wrap; gap: 8px;">
+                                    <button class="task-check" onclick="toggleTask(<?= $task['id'] ?>)"></button>
+                                    <div class="task-content" style="min-width: 0;">
+                                        <div class="task-title"><?= htmlspecialchars($task['title']) ?></div>
+                                        <div class="task-due">Due: <?= date('M d, Y', strtotime($task['due_date'])) ?> · <?= $type_icons[$task['type']] ?? '📖' ?> <?= $task['type'] ?> · <?= $task['estimated_hours'] ?>h allotted</div>
+                                    </div>
+                                    <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: <?= $risk_bg[$task['risk']] ?>; color: <?= $risk_colors[$task['risk']] ?>; white-space: nowrap;">
+                                        <?php if ($task['days_left'] > 0): ?>
+                                            <?= $task['days_left'] ?>d <?= $task['hours_left'] - ($task['days_left'] * 24) ?>h left
+                                        <?php else: ?>
+                                            <?= $task['hours_left'] ?>h left
+                                        <?php endif; ?>
+                                        · <?= $task['risk_label'] ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">✅</div>
+                                <div class="empty-text">No upcoming tasks</div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Task</h3>
+                <p style="color: var(--text-muted); font-size: 13px;">Create a new study task</p>
+            </div>
+            <form action="add_task.php" method="POST">
+                <input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <select name="type" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                    <option value="study">Study Session</option>
+                    <option value="assignment">Assignment</option>
+                    <option value="exam">Exam</option>
+                </select>
+                <input type="date" name="due_date" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <input type="number" name="estimated_hours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pie Chart Modal -->
+    <div id="pieModal" class="modal" onclick="closePieChart(event)">
+        <div class="pie-modal-content" onclick="event.stopPropagation()">
+            <div class="pie-modal-header">
+                <h3>Task Completion</h3>
+                <button class="pie-close" onclick="closePieChart()">✕</button>
+            </div>
+            <div class="pie-chart-container">
+                <svg class="pie-svg" viewBox="0 0 120 120">
+                    <circle class="pie-bg" cx="60" cy="60" r="48" />
+                    <circle class="pie-fill" id="pieFill" cx="60" cy="60" r="48"
+                        stroke-dasharray="301.6"
+                        stroke-dashoffset="<?= $total_tasks > 0 ? 301.6 * (1 - $completed_tasks / $total_tasks) : 301.6 ?>" />
+                    <text class="pie-text" x="60" y="60" text-anchor="middle" dominant-baseline="central">
+                        <?= $completion_rate ?>%
+                    </text>
+                </svg>
+            </div>
+            <div class="pie-legend">
+                <div class="pie-legend-item">
+                    <span class="pie-dot completed"></span>
+                    <span>Completed</span>
+                    <span class="pie-count"><?= $completed_tasks ?></span>
+                </div>
+                <div class="pie-legend-item">
+                    <span class="pie-dot pending"></span>
+                    <span>Pending</span>
+                    <span class="pie-count"><?= $pending_tasks ?></span>
+                </div>
+            </div>
+            <div class="pie-footer">
+                <?= $completed_tasks ?> of <?= $total_tasks ?> tasks completed
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pie-modal-content {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            width: 90%;
+            max-width: 360px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+        .pie-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .pie-modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .pie-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .pie-close:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .pie-chart-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .pie-svg {
+            width: 180px;
+            height: 180px;
+            transform: rotate(-90deg);
+        }
+        .pie-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 10;
+        }
+        .pie-fill {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+        .pie-text {
+            transform: rotate(90deg);
+            transform-origin: 60px 60px;
+            font-size: 22px;
+            font-weight: 700;
+            fill: var(--text-primary);
+        }
+        .pie-legend {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .pie-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .pie-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .pie-dot.completed { background: var(--accent); }
+        .pie-dot.pending { background: var(--border); }
+        .pie-count {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-left: 4px;
+        }
+        .pie-footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+
+    <script>
+        function showPieChart() {
+            document.getElementById('pieModal').style.display = 'flex';
+        }
+
+        function closePieChart(e) {
+            if (!e || e.target === document.getElementById('pieModal')) {
+                document.getElementById('pieModal').style.display = 'none';
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') document.getElementById('pieModal').style.display = 'none';
+        });
+
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+        
+        // Task modal
+        function openTaskModal() {
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+        
+        function closeTaskModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+        
+        // Generate plan
+        function generatePlan() {
+            fetch('generate_plan.php').then(() => location.reload());
+        }
+        
+        // Session tracking
+        function startSession(planId) {
+            const btn = event.target;
+            btn.textContent = '⏳ Starting...';
+            fetch('session.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=start&plan_id=' + planId
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    btn.textContent = '⏹ End';
+                    btn.style.color = 'var(--danger)';
+                    btn.onclick = function() { stopSession(data.session_id, btn); };
+                }
+            });
+        }
+        
+        function stopSession(sessionId, btn) {
+            btn.textContent = '⏳ Saving...';
+            fetch('session.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=stop&session_id=' + sessionId
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    btn.textContent = '✅ ' + data.duration_minutes + 'm';
+                    btn.style.color = 'var(--success)';
+                    btn.onclick = null;
+                    setTimeout(() => location.reload(), 1000);
+                }
+            });
+        }
+        
+        // Check for active session on page load
+        fetch('session.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=active'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.active) {
+                // Find the plan's start button and update it
+                const buttons = document.querySelectorAll('.timeline-item button');
+                const startBtns = Array.from(buttons).filter(b => b.textContent === '▶ Start' || b.textContent.startsWith('⏳'));
+                if (startBtns.length > 0) {
+                    const firstBtn = startBtns[0];
+                    firstBtn.textContent = '⏹ End';
+                    firstBtn.style.color = 'var(--danger)';
+                    firstBtn.onclick = function() { stopSession(data.session_id, firstBtn); };
+                }
+            }
+        });
+        
+        // Toggle task completion
+        function toggleTask(taskId) {
+            fetch('update_task_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'task_id=' + taskId + '&status=completed'
+            }).then(() => location.reload());
+        }
+    </script>
+</body>
+</html>
