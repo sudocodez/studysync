@@ -1,5 +1,6 @@
 <?php
 require_once 'db_config.php';
+verify_csrf();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_course'])) {
     $course_name = trim($_POST['course_name']);
@@ -9,6 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_course'])) {
         $stmt = $pdo->prepare("INSERT INTO courses (user_id, course_name, course_code, color) VALUES (?, ?, ?, ?)");
         $stmt->execute([$_SESSION['user_id'], $course_name, $course_code, $color]);
         $success = "Course added successfully!";
+    } else {
+        $error = "Course name is required";
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_course'])) {
+    $id = (int)$_POST['course_id'];
+    $course_name = trim($_POST['course_name']);
+    $course_code = trim($_POST['course_code']);
+    $color = $_POST['color'] ?? '#4CAF50';
+    if (!empty($course_name)) {
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, course_code = ?, color = ? WHERE id = ? AND user_id = ?");
+        $stmt->execute([$course_name, $course_code, $color, $id, $_SESSION['user_id']]);
+        $success = "Course updated successfully!";
     } else {
         $error = "Course name is required";
     }
@@ -70,6 +85,8 @@ foreach ($courses as $course) {
         .btn-view { background: var(--accent); color: white; }
         .btn-del { background: rgba(239,68,68,0.1); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
+        .btn-edit { background: var(--accent-soft); color: var(--accent); }
+        .btn-edit:hover { background: var(--accent); color: white; }
         .alert-success { padding: 12px; background: rgba(16,185,129,0.1); border: 1px solid var(--success); border-radius: var(--radius-sm); color: var(--success); font-size: 13px; margin-bottom: 16px; }
         .alert-error { padding: 12px; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); border-radius: var(--radius-sm); color: var(--danger); font-size: 13px; margin-bottom: 16px; }
         .empty-state { text-align: center; padding: 48px; color: var(--text-muted); }
@@ -95,7 +112,7 @@ foreach ($courses as $course) {
             <div class="add-form">
                 <h2>Add New Course</h2>
                 <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div class="form-group">
+                    <?= csrf_field() ?><div class="form-group">
                         <label>Course Name *</label>
                         <input type="text" name="course_name" placeholder="e.g. Computer Science" required>
                     </div>
@@ -144,7 +161,8 @@ foreach ($courses as $course) {
                                 <?php endif; ?>
                                 <div class="course-actions">
                                     <a href="dashboard.php?course_id=<?= $course['id'] ?>" class="btn-view">View Tasks</a>
-                                    <a href="?delete=<?= $course['id'] ?>" class="btn-del" onclick="return confirm('Delete this course?')">Delete</a>
+                                    <a href="#" class="btn-edit" onclick="openEditModal(<?= $course['id'] ?>, '<?= htmlspecialchars(addslashes($course['course_name'])) ?>', '<?= htmlspecialchars(addslashes($course['course_code'] ?? '')) ?>', '<?= htmlspecialchars($course['color']) ?>')">Edit</a>
+                                    <a href="?delete=<?= $course['id'] ?>" class="btn-del" onclick="return confirm('Delete this course? This cannot be undone.')">Delete</a>
                                 </div>
                             </div>
                         </div>
@@ -158,12 +176,73 @@ foreach ($courses as $course) {
             <?php endif; ?>
         </main>
     </div>
+        </main>
+    </div>
+
+    <!-- Edit Course Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>Edit Course</h3>
+            </div>
+            <form method="POST" style="padding: 24px;">
+                <?= csrf_field() ?>
+                <input type="hidden" name="course_id" id="editCourseId">
+                <div class="form-group">
+                    <label>Course Name *</label>
+                    <input type="text" name="course_name" id="editCourseName" required>
+                </div>
+                <div class="form-group">
+                    <label>Course Code (Optional)</label>
+                    <input type="text" name="course_code" id="editCourseCode">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <div class="color-grid" id="editColorGrid"></div>
+                    <input type="hidden" name="color" id="editColorInput" value="#4CAF50">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn-primary" style="padding: 10px 20px; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; background: var(--bg-primary); color: var(--text-secondary);" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" name="edit_course" class="btn-primary" style="padding: 10px 20px; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openTaskModal() { alert('Use the Dashboard to add tasks.'); }
         function selectColor(el) {
             document.querySelectorAll('.color-opt').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');
             document.getElementById('colorInput').value = el.dataset.color;
+        }
+        function openEditModal(id, name, code, color) {
+            document.getElementById('editCourseId').value = id;
+            document.getElementById('editCourseName').value = name;
+            document.getElementById('editCourseCode').value = code;
+            renderEditColors(color);
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        function renderEditColors(selected) {
+            const grid = document.getElementById('editColorGrid');
+            const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#FF5722', '#607D8B', '#E91E63', '#3F51B5'];
+            grid.innerHTML = '';
+            colors.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'color-opt' + (c === selected ? ' selected' : '');
+                el.style.background = c;
+                el.dataset.color = c;
+                el.onclick = function() {
+                    document.querySelectorAll('#editColorGrid .color-opt').forEach(x => x.classList.remove('selected'));
+                    el.classList.add('selected');
+                    document.getElementById('editColorInput').value = c;
+                };
+                grid.appendChild(el);
+            });
+            document.getElementById('editColorInput').value = selected;
         }
     </script>
 </body>

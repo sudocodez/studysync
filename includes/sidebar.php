@@ -1,6 +1,13 @@
 <?php
 // Shared sidebar navigation
 $current_page = basename($_SERVER['PHP_SELF']);
+
+$sidebar_unread = 0;
+if (isset($pdo, $_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+    $stmt->execute([$_SESSION['user_id']]);
+    $sidebar_unread = (int)$stmt->fetchColumn();
+}
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -53,6 +60,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </svg>
             <span class="nav-text">Focus Timer</span>
         </a>
+        <a href="notifications.php" class="nav-item <?= $current_page === 'notifications.php' ? 'active' : '' ?>" id="notifNavItem">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="nav-text">Notifications</span>
+            <span id="notifBadge" class="nav-badge" <?= $sidebar_unread > 0 ? '' : 'style="display:none;"' ?>><?= $sidebar_unread > 99 ? '99+' : $sidebar_unread ?></span>
+        </a>
+        <a href="profile.php" class="nav-item <?= $current_page === 'profile.php' ? 'active' : '' ?>">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="nav-text">Profile</span>
+        </a>
         <a href="add_course.php" class="nav-item <?= $current_page === 'add_course.php' ? 'active' : '' ?>">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -101,6 +123,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </a>
     </div>
 </aside>
+
+<!-- Mobile hamburger -->
+<button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Toggle menu">
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
 
 <!-- Floating Chat Button -->
 <div class="chat-fab">
@@ -286,6 +315,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </style>
 
 <script>
+var CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
+
 function toggleDarkMode() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
@@ -296,6 +327,14 @@ function toggleDarkMode() {
         html.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
     }
+}
+
+// Sidebar toggle for mobile
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('hamburgerBtn');
+    sidebar.classList.toggle('open');
+    if (btn) btn.classList.toggle('open');
 }
 
 function openHelpCenter() {

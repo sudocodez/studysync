@@ -33,9 +33,14 @@ $stmt->execute([$_SESSION['user_id'], $today]);
 $today_plan = $stmt->fetchAll();
 
 // Upcoming tasks
-$stmt = $pdo->prepare("SELECT id, title, type, due_date, estimated_hours, priority, status FROM tasks WHERE user_id = ? AND status != 'completed' AND due_date >= ? ORDER BY due_date ASC LIMIT 10");
+$stmt = $pdo->prepare("SELECT t.id, t.title, t.type, t.due_date, t.estimated_hours, t.priority, t.status, t.course_id, t.description, COALESCE(c.course_name, '') AS course_name FROM tasks t LEFT JOIN courses c ON t.course_id = c.id WHERE t.user_id = ? AND t.status != 'completed' AND t.due_date >= ? ORDER BY t.due_date ASC LIMIT 10");
 $stmt->execute([$_SESSION['user_id'], $today]);
 $upcoming_tasks = $stmt->fetchAll();
+
+// Fetch courses for dropdown
+$stmt = $pdo->prepare("SELECT id, course_name, course_code FROM courses WHERE user_id = ? ORDER BY course_name");
+$stmt->execute([$_SESSION['user_id']]);
+$courses = $stmt->fetchAll();
 
 // Calculate time left and risk for each task
 $now = time();
@@ -70,6 +75,43 @@ $week_end = date('Y-m-d', strtotime('sunday this week'));
 $stmt = $pdo->prepare("SELECT * FROM study_plan WHERE user_id = ? AND plan_date >= ? AND plan_date <= ? AND status != 'missed' ORDER BY plan_date, start_time");
 $stmt->execute([$_SESSION['user_id'], $week_start, $week_end]);
 $week_plan = $stmt->fetchAll();
+
+// Calculate workload per day
+$stmt = $pdo->prepare("SELECT * FROM available_time WHERE user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$all_avail = $stmt->fetchAll();
+
+$workload = [];
+for ($i = 0; $i < 7; $i++) {
+    $date = date('Y-m-d', strtotime("$week_start + $i days"));
+    $dow = (int)date('w', strtotime($date));
+
+    // Available minutes for this day
+    $avail_mins = 0;
+    foreach ($all_avail as $slot) {
+        if ($slot['is_recurring'] && (int)$slot['day_of_week'] === $dow) {
+            $avail_mins += (strtotime($slot['end_time']) - strtotime($slot['start_time'])) / 60;
+        } elseif (!$slot['is_recurring'] && ($slot['specific_date'] ?? '') === $date) {
+            $avail_mins += (strtotime($slot['end_time']) - strtotime($slot['start_time'])) / 60;
+        }
+    }
+
+    // Scheduled minutes for this day
+    $sched_mins = 0;
+    foreach ($week_plan as $p) {
+        if ($p['plan_date'] === $date) {
+            $sched_mins += (strtotime($p['end_time']) - strtotime($p['start_time'])) / 60;
+        }
+    }
+
+    $pct = $avail_mins > 0 ? round(($sched_mins / $avail_mins) * 100) : ($sched_mins > 0 ? 100 : 0);
+    $workload[$date] = [
+        'scheduled' => round($sched_mins),
+        'available' => round($avail_mins),
+        'pct' => min($pct, 100),
+        'overload' => $pct > 100,
+    ];
+}
 
 // Get user stats
 $stmt = $pdo->prepare("SELECT * FROM user_stats WHERE user_id = ?");
@@ -161,6 +203,8 @@ else $greeting = "Good Evening";
                                 $date = date('Y-m-d', strtotime("$week_start + $i days"));
                                 $is_today = $date === $today;
                                 $day_plans = $plan_by_day[$date] ?? [];
+                                $wl = $workload[$date] ?? ['scheduled' => 0, 'available' => 0, 'pct' => 0, 'overload' => false];
+                                $wl_color = $wl['overload'] ? 'var(--danger)' : ($wl['pct'] > 80 ? 'var(--warning)' : 'var(--success)');
                             ?>
                                 <div style="background: <?= $is_today ? 'var(--accent-soft)' : 'var(--bg-primary)' ?>; border-radius: var(--radius-sm); padding: 10px; border: 1px solid <?= $is_today ? 'var(--accent)' : 'var(--border-light)' ?>;">
                                     <div style="font-size: 11px; font-weight: 600; color: <?= $is_today ? 'var(--accent)' : 'var(--text-muted)' ?>; margin-bottom: 8px; text-align: center;"><?= $days_short[$i] ?> <?= date('j', strtotime($date)) ?></div>
@@ -173,6 +217,17 @@ else $greeting = "Good Evening";
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div style="text-align: center; color: var(--text-muted); font-size: 10px; padding: 8px 0;">—</div>
+                                    <?php endif; ?>
+                                    <?php if ($wl['scheduled'] > 0): ?>
+                                        <div style="margin-top: 6px; height: 4px; background: var(--border-light); border-radius: 2px; overflow: hidden;">
+                                            <div style="height: 100%; width: <?= $wl['pct'] ?>%; background: <?= $wl_color ?>; border-radius: 2px; transition: width 0.3s;"></div>
+                                        </div>
+                                        <div style="font-size: 9px; color: <?= $wl_color ?>; margin-top: 2px; text-align: center; font-weight: 600;">
+                                            <?= $wl['scheduled'] ?>m / <?= $wl['available'] > 0 ? $wl['available'] . 'm' : 'no avail' ?>
+                                            <?php if ($wl['overload']): ?>⚠<?php endif; ?>
+                                        </div>
+                                    <?php elseif ($wl['available'] > 0): ?>
+                                        <div style="margin-top: 6px; font-size: 9px; color: var(--text-muted); text-align: center;"><?= $wl['available'] ?>m free</div>
                                     <?php endif; ?>
                                 </div>
                             <?php endfor; ?>
@@ -229,16 +284,20 @@ else $greeting = "Good Evening";
                                     <button class="task-check" onclick="toggleTask(<?= $task['id'] ?>)"></button>
                                     <div class="task-content" style="min-width: 0;">
                                         <div class="task-title"><?= htmlspecialchars($task['title']) ?></div>
-                                        <div class="task-due">Due: <?= date('M d, Y', strtotime($task['due_date'])) ?> · <?= $type_icons[$task['type']] ?? '📖' ?> <?= $task['type'] ?> · <?= $task['estimated_hours'] ?>h allotted</div>
+                                        <div class="task-due">Due: <?= date('M d, Y', strtotime($task['due_date'])) ?> · <?= $type_icons[$task['type']] ?? '📖' ?> <?= $task['type'] ?> · <?= $task['estimated_hours'] ?>h allotted<?php if ($task['course_name']): ?> · <?= htmlspecialchars($task['course_name']) ?><?php endif; ?></div>
                                     </div>
-                                    <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: <?= $risk_bg[$task['risk']] ?>; color: <?= $risk_colors[$task['risk']] ?>; white-space: nowrap;">
-                                        <?php if ($task['days_left'] > 0): ?>
-                                            <?= $task['days_left'] ?>d <?= $task['hours_left'] - ($task['days_left'] * 24) ?>h left
-                                        <?php else: ?>
-                                            <?= $task['hours_left'] ?>h left
-                                        <?php endif; ?>
-                                        · <?= $task['risk_label'] ?>
-                                    </span>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: <?= $risk_bg[$task['risk']] ?>; color: <?= $risk_colors[$task['risk']] ?>; white-space: nowrap;">
+                                            <?php if ($task['days_left'] > 0): ?>
+                                                <?= $task['days_left'] ?>d <?= $task['hours_left'] - ($task['days_left'] * 24) ?>h left
+                                            <?php else: ?>
+                                                <?= $task['hours_left'] ?>h left
+                                            <?php endif; ?>
+                                            · <?= $task['risk_label'] ?>
+                                        </span>
+                                        <button onclick="openEditTaskModal(<?= $task['id'] ?>)" style="background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); padding: 4px;" title="Edit">✏️</button>
+                                        <button onclick="deleteTask(<?= $task['id'] ?>)" style="background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); padding: 4px;" title="Delete">🗑️</button>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -261,17 +320,60 @@ else $greeting = "Good Evening";
                 <p style="color: var(--text-muted); font-size: 13px;">Create a new study task</p>
             </div>
             <form action="add_task.php" method="POST">
-                <input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <?= csrf_field() ?><input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <select name="type" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                     <option value="study">Study Session</option>
                     <option value="assignment">Assignment</option>
                     <option value="exam">Exam</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="project">Project</option>
                 </select>
+                <select name="course_id" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                    <option value="">No Course</option>
+                    <?php foreach ($courses as $c): ?>
+                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['course_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <textarea name="description" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
                 <input type="date" name="due_date" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <input type="number" name="estimated_hours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <div class="modal-buttons">
                     <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
                     <button type="submit" class="btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Task</h3>
+            </div>
+            <form action="edit_task.php" method="POST">
+                <?= csrf_field() ?>
+                <input type="hidden" name="task_id" id="editTaskId">
+                <input type="text" name="title" id="editTaskTitle" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <select name="type" id="editTaskType" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                    <option value="study">Study Session</option>
+                    <option value="assignment">Assignment</option>
+                    <option value="exam">Exam</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="project">Project</option>
+                </select>
+                <select name="course_id" id="editTaskCourse" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                    <option value="">No Course</option>
+                    <?php foreach ($courses as $c): ?>
+                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['course_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <textarea name="description" id="editTaskDesc" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+                <input type="date" name="due_date" id="editTaskDue" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <input type="number" name="estimated_hours" id="editTaskHours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeEditTaskModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -423,11 +525,6 @@ else $greeting = "Good Evening";
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') document.getElementById('pieModal').style.display = 'none';
         });
-
-        // Sidebar toggle for mobile
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
         
         // Task modal
         function openTaskModal() {
@@ -437,6 +534,34 @@ else $greeting = "Good Evening";
         function closeTaskModal() {
             document.getElementById('taskModal').style.display = 'none';
         }
+
+        // Edit task
+        function openEditTaskModal(taskId) {
+            fetch('API/get_task.php?id=' + taskId)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('editTaskId').value = data.task.id;
+                        document.getElementById('editTaskTitle').value = data.task.title;
+                        document.getElementById('editTaskType').value = data.task.type;
+                        document.getElementById('editTaskCourse').value = data.task.course_id || '';
+                        document.getElementById('editTaskDesc').value = data.task.description || '';
+                        document.getElementById('editTaskDue').value = data.task.due_date;
+                        document.getElementById('editTaskHours').value = data.task.estimated_hours;
+                        document.getElementById('editTaskModal').style.display = 'flex';
+                    }
+                });
+        }
+
+        function closeEditTaskModal() {
+            document.getElementById('editTaskModal').style.display = 'none';
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('Delete this task? This cannot be undone.')) {
+                apiPost('delete_task.php', 'task_id=' + taskId).then(() => location.reload());
+            }
+        }
         
         // Generate plan
         function generatePlan() {
@@ -444,14 +569,18 @@ else $greeting = "Good Evening";
         }
         
         // Session tracking
+        function apiPost(url, body) {
+            return fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': CSRF_TOKEN },
+                body: body
+            });
+        }
+
         function startSession(planId) {
             const btn = event.target;
             btn.textContent = '⏳ Starting...';
-            fetch('session.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=start&plan_id=' + planId
-            })
+            apiPost('session.php', 'action=start&plan_id=' + planId)
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -464,11 +593,7 @@ else $greeting = "Good Evening";
         
         function stopSession(sessionId, btn) {
             btn.textContent = '⏳ Saving...';
-            fetch('session.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=stop&session_id=' + sessionId
-            })
+            apiPost('session.php', 'action=stop&session_id=' + sessionId)
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -481,11 +606,7 @@ else $greeting = "Good Evening";
         }
         
         // Check for active session on page load
-        fetch('session.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'action=active'
-        })
+        apiPost('session.php', 'action=active')
         .then(r => r.json())
         .then(data => {
             if (data.active) {
@@ -506,7 +627,7 @@ else $greeting = "Good Evening";
             fetch('update_task_status.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'task_id=' + taskId + '&status=completed'
+                body: 'task_id=' + taskId + '&status=completed&csrf_token=' + CSRF_TOKEN
             }).then(() => location.reload());
         }
     </script>

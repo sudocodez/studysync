@@ -81,12 +81,25 @@ $completed_sessions = $stmt->fetchAll();
             <p style="color: var(--text-muted); font-size: 13px;">Create a new study task</p>
         </div>
         <form action="add_task.php" method="POST">
-            <input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+            <?= csrf_field() ?><input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
             <select name="type" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <option value="study">Study Session</option>
                 <option value="assignment">Assignment</option>
                 <option value="exam">Exam</option>
+                <option value="quiz">Quiz</option>
+                <option value="project">Project</option>
             </select>
+            <select name="course_id" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <option value="">No Course</option>
+                <?php
+                $stmt = $pdo->prepare("SELECT id, course_name FROM courses WHERE user_id = ? ORDER BY course_name");
+                $stmt->execute([$_SESSION['user_id']]);
+                $crs = $stmt->fetchAll();
+                foreach ($crs as $c): ?>
+                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['course_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <textarea name="description" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
             <input type="date" name="due_date" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
             <input type="number" name="estimated_hours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
             <div class="modal-buttons">

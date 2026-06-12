@@ -21,24 +21,19 @@ if($status == 'completed' && $stmt->rowCount() > 0) {
     $task_id = $stmt->fetchColumn();
     
     if($task_id) {
-        $stmt = $pdo->prepare("
-            UPDATE tasks
-            SET progress_percentage = MIN(progress_percentage + 25, 100),
-                progress_status = CASE
-                    WHEN MIN(progress_percentage + 25, 100) >= 100 THEN 'completed'
-                    ELSE 'in_progress'
-                END,
-                status = CASE
-                    WHEN MIN(progress_percentage + 25, 100) >= 100 THEN 'completed'
-                    ELSE 'in_progress'
-                END,
-                completed_at = CASE
-                    WHEN MIN(progress_percentage + 25, 100) >= 100 THEN ?
-                    ELSE completed_at
-                END
-            WHERE id = ? AND user_id = ? AND progress_percentage < 100
-        ");
-        $stmt->execute([date('Y-m-d H:i:s'), $task_id, $_SESSION['user_id']]);
+        // Fetch current progress
+        $stmt = $pdo->prepare("SELECT progress_percentage, status FROM tasks WHERE id = ? AND user_id = ?");
+        $stmt->execute([$task_id, $_SESSION['user_id']]);
+        $task = $stmt->fetch();
+
+        if ($task && $task['progress_percentage'] < 100) {
+            $new_pct = min((int)$task['progress_percentage'] + 25, 100);
+            $new_status = $new_pct >= 100 ? 'completed' : 'in_progress';
+            $completed_at = $new_pct >= 100 ? date('Y-m-d H:i:s') : null;
+
+            $stmt = $pdo->prepare("UPDATE tasks SET progress_percentage = ?, progress_status = ?, status = ?, completed_at = ? WHERE id = ? AND user_id = ?");
+            $stmt->execute([$new_pct, $new_status, $new_status, $completed_at, $task_id, $_SESSION['user_id']]);
+        }
     }
 }
 

@@ -141,6 +141,18 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            link VARCHAR(500),
+            is_read TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
     // MySQL column migrations (check and add missing columns)
@@ -158,7 +170,9 @@ try {
     try {
         $pdo->exec("ALTER TABLE study_plan ADD COLUMN google_event_id VARCHAR(255)");
     } catch(PDOException $e) {}
-
+    try {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN description TEXT");
+    } catch(PDOException $e) {}
     // Insert demo user if not exists
     $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE username = 'demo'");
     if($stmt->fetchColumn() == 0) {
@@ -305,6 +319,18 @@ try {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                link TEXT,
+                is_read INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
         ");
 
         // SQLite column migrations
@@ -322,6 +348,10 @@ try {
         }
         if(!in_array('google_event_id', $plan_columns)) {
             $pdo->exec("ALTER TABLE study_plan ADD COLUMN google_event_id TEXT");
+        }
+
+        if(!in_array('description', $task_columns)) {
+            $pdo->exec("ALTER TABLE tasks ADD COLUMN description TEXT");
         }
 
         // Demo user
@@ -361,4 +391,34 @@ if(!isset($_SESSION['user_id']) && basename($_SERVER['PHP_SELF']) != 'index.php'
 
 // Expose db_type for any script that needs it
 $GLOBALS['db_type'] = $db_type;
+
+// CSRF protection
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+function csrf_token() {
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_field() {
+    return '<input type="hidden" name="csrf_token" value="' . $_SESSION['csrf_token'] . '">';
+}
+
+function verify_csrf() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!hash_equals($_SESSION['csrf_token'], $token)) {
+            http_response_code(403);
+            if (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+            } else {
+                die('Invalid CSRF token');
+            }
+            exit();
+        }
+    }
+    return true;
+}
 ?>

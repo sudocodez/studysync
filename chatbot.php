@@ -164,7 +164,7 @@ function getFallbackResponse($message, $context) {
     $procrast_keywords = ['procrastinate', 'procrastination', 'lazy', "can't start", 'cannot start', 'distracted', 'distraction', 'focus', 'concentrate', 'concentration', 'get started', 'starting', 'hard to start', 'keep putting off', 'avoiding'];
     foreach($procrast_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
-            return "Try the 5-minute rule: commit to just 5 minutes of study. Momentum usually takes over after that. Remove phone distractions and use the Focus Timer to create urgency. You have " . ($streak > 0 ? "a {$streak}-day streak to protect!" : "a chance to start a new streak today!") . " 🎯";
+            return "Try the 5-minute rule: commit to just 5 minutes of study. Momentum usually takes over after that. Remove phone distractions and use the Focus Timer to create urgency. You have " . ($streak > 0 ? "a {$streak}-day streak to protect!" : "a chance to start a new streak today!") . " \xF0\x9F\x8E\xAF";
         }
     }
 
@@ -184,7 +184,7 @@ function getFallbackResponse($message, $context) {
     $stress_keywords = ['overwhelm', 'overwhelmed', 'stress', 'stressed', 'anxious', 'anxiety', 'burnout', 'burnt out', 'too much', 'can\'t cope', 'struggling', 'struggle', 'panic', 'panicking', 'worried', 'worry'];
     foreach($stress_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
-            return "Take a deep breath 🧘 Focus on ONE thing at a time — not everything at once." . ($overdue > 0 ? " You have {$overdue} overdue tasks, but that's okay. Pick the smallest one and do it now." : "") . " Use your StudySync schedule to see what's next and trust the plan. Small steps compound into big progress.";
+            return "Take a deep breath. Focus on ONE thing at a time — not everything at once." . ($overdue > 0 ? " You have {$overdue} overdue tasks, but that's okay. Pick the smallest one and do it now." : "") . " Use your StudySync schedule to see what's next and trust the plan. Small steps compound into big progress.";
         }
     }
 
@@ -194,6 +194,46 @@ function getFallbackResponse($message, $context) {
         if(strpos($lower, $kw) !== false) {
             $hours = $total_hours > 0 ? " You've already logged {$total_hours} study hours — that's real progress!" : "";
             return "Motivation follows action, not the other way around. Start with ONE tiny task (even 2 minutes). Once you begin, momentum builds naturally.{$hours} What's the single smallest thing you can do right now?";
+        }
+    }
+
+    // --- General / off-topic knowledge questions ---
+    $general_topics = [
+        'programming' => [
+            'keywords' => ['programming', 'coding', 'programming language', 'code', 'developer', 'software', 'python', 'javascript', 'java', 'c++', 'html', 'css', 'web dev', 'learn to code', 'computer science'],
+            'response' => "Python is widely considered the easiest programming language to learn because of its simple, readable syntax that reads like English. It's great for beginners and used in web development, data science, and automation. JavaScript is another good starter language if you're interested in web development. What's your goal with programming — I can recommend the best path!"
+        ],
+        'mathematics' => [
+            'keywords' => ['math', 'mathematics', 'algebra', 'calculus', 'geometry', 'trigonometry', 'statistics', 'equation', 'formula'],
+            'response' => "For math, consistent practice is key — do a few problems daily rather than cramming. Use active recall: after learning a formula, close the book and solve a problem from memory. Break complex problems into smaller steps. Would you like study tips for a specific math topic?"
+        ],
+        'science' => [
+            'keywords' => ['science', 'biology', 'chemistry', 'physics', 'experiment', 'lab', 'scientific'],
+            'response' => "For science subjects, focus on understanding concepts rather than memorizing facts. Draw diagrams, explain concepts out loud (Feynman technique), and connect new ideas to what you already know. Practice with past papers or questions to test your understanding. What science subject are you studying?"
+        ],
+        'language' => [
+            'keywords' => ['language', 'learn english', 'learn spanish', 'learn french', 'vocabulary', 'grammar', 'foreign language'],
+            'response' => "The best way to learn a language is consistent daily exposure: 15-30 minutes of reading, listening, or speaking practice every day. Use flashcards (like Anki) for spaced repetition of vocabulary. Try to think in the language and practice with native speakers. What language are you learning?"
+        ],
+        'history' => [
+            'keywords' => ['history', 'historical', 'geography', 'geopolitical', 'civilization', 'ancient'],
+            'response' => "For history, create timelines to visualize events in order, and connect causes to effects. Use mnemonic devices for dates and names. Teaching the material to someone else (or even out loud to yourself) is one of the best ways to retain it. What period or topic are you studying?"
+        ],
+        'writing' => [
+            'keywords' => ['write', 'writing', 'essay', 'creative writing', 'academic writing', 'grammar', 'composition'],
+            'response' => "Good writing comes from good structure: outline your main points first, write a rough draft without worrying about perfection, then revise for clarity and flow. Read your work aloud to catch awkward phrasing. Would you like tips on essays, creative writing, or academic papers?"
+        ],
+        'career' => [
+            'keywords' => ['career', 'job', 'interview', 'resume', 'cv', 'internship', 'profession', 'work', 'employ'],
+            'response' => "For career prep, focus on building practical skills and a portfolio of work you can show. Tailor your resume to each role, practice common interview questions out loud, and network with people in your target field. Would you like specific advice on resumes, interviews, or skill-building?"
+        ]
+    ];
+
+    foreach($general_topics as $topic) {
+        foreach($topic['keywords'] as $kw) {
+            if(strpos($lower, $kw) !== false) {
+                return $topic['response'];
+            }
         }
     }
 
@@ -229,7 +269,7 @@ function getFallbackResponse($message, $context) {
     foreach($streak_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
             return $streak > 0
-                ? "You're on a {$streak}-day study streak! 🔥 You've logged {$total_hours} total hours. Keep showing up daily — consistency beats intensity. Check your Dashboard for the full stats card."
+                ? "You're on a {$streak}-day study streak! \xF0\x9F\x94\xA5 You've logged {$total_hours} total hours. Keep showing up daily — consistency beats intensity. Check your Dashboard for the full stats card."
                 : "You haven't started a streak yet. Study today to begin one! Log your first session on the Dashboard or use the Focus Timer. Even 15 minutes counts toward your streak.";
         }
     }
@@ -238,7 +278,7 @@ function getFallbackResponse($message, $context) {
     $assignment_keywords = ['assignment', 'assignments', 'homework', 'paper', 'essay', 'project', 'report', 'thesis', 'dissertation', 'lab report', 'write', 'writing'];
     foreach($assignment_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
-            return "Break assignments into smaller steps: research → outline → draft → revise → final. Add each step as a separate task with its own deadline. StudySync will then schedule time for each piece, so you're not scrambling the night before.";
+            return "Break assignments into smaller steps: research -> outline -> draft -> revise -> final. Add each step as a separate task with its own deadline. StudySync will then schedule time for each piece, so you're not scrambling the night before.";
         }
     }
 
@@ -255,7 +295,7 @@ function getFallbackResponse($message, $context) {
     foreach($greeting_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
             $time_of_day = (int)date('G') < 12 ? 'morning' : ((int)date('G') < 17 ? 'afternoon' : 'evening');
-            return "Good {$time_of_day}! 👋 I'm your StudySync study assistant." . ($streak > 0 ? " You're on a {$streak}-day streak — nice work!" : "") . " What would you like help with today? Studying tips, scheduling, motivation, or something else?";
+            return "Good {$time_of_day}! \xF0\x9F\x91\x8B I'm your StudySync study assistant." . ($streak > 0 ? " You're on a {$streak}-day streak — nice work!" : "") . " What would you like help with today? Studying tips, scheduling, motivation, or something else?";
         }
     }
 
@@ -263,7 +303,7 @@ function getFallbackResponse($message, $context) {
     $thanks_keywords = ['thank', 'thanks', 'thank you', 'thx', 'ty', 'appreciate', 'grateful'];
     foreach($thanks_keywords as $kw) {
         if(strpos($lower, $kw) !== false) {
-            return "You're welcome! Keep up the great work. I'm here whenever you need study advice, motivation, or help navigating StudySync. 📚✨";
+            return "You're welcome! Keep up the great work. I'm here whenever you need study advice, motivation, or help navigating StudySync. \xF0\x9F\x93\x9A\xE2\x9C\xA8";
         }
     }
 
@@ -305,8 +345,8 @@ function getFallbackResponse($message, $context) {
         return "You have {$pending} pending task(s)" . ($sessions_today > 0 ? " and {$sessions_today} study session(s) today" : "") . ". I'd suggest starting with the one due soonest — even just 15 minutes of focused work helps. Need advice on a specific task or topic?";
     }
 
-    // Final fallback — always asks a question to engage
-    return "I'm your StudySync assistant! Ask me about:\n• Study techniques — Pomodoro, active recall, spaced repetition\n• Exam prep & revision strategies\n• Beating procrastination & staying motivated\n• Time management & scheduling\n• Using StudySync features\n\nWhat would you like help with? 📚";
+    // Final fallback — graceful acknowledgment of limitation
+    return "I'm designed as a study planning assistant, so that question is outside my area of expertise. But I can definitely help you with:\n\xE2\x80\xA2 Study techniques — Pomodoro, active recall, spaced repetition\n\xE2\x80\xA2 Exam prep and revision strategies\n\xE2\x80\xA2 Beating procrastination and staying motivated\n\xE2\x80\xA2 Time management and scheduling\n\xE2\x80\xA2 Using StudySync features\n\nWhat would you like help with?";
 }
 
 // Get chat history for display

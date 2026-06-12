@@ -148,7 +148,7 @@
             const taskId = new URLSearchParams(window.location.search).get('task_id') || 0;
             fetch('session.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': CSRF_TOKEN },
                 body: 'action=start&task_id=' + taskId
             }).then(r => r.json()).then(d => { if (d.success) sessionId = d.session_id; });
 
@@ -167,7 +167,7 @@
                     if (sessionId) {
                         fetch('session.php', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': CSRF_TOKEN },
                             body: 'action=stop&session_id=' + sessionId
                         });
                     }

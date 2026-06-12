@@ -1,5 +1,6 @@
 <?php
 require_once 'db_config.php';
+verify_csrf();
 
 $task_id = (int)($_POST['task_id'] ?? 0);
 $status = $_POST['status'] ?? 'pending';
@@ -25,6 +26,8 @@ $stmt = $pdo->prepare("
     WHERE id = ? AND user_id = ?
 ");
 $stmt->execute([$status, $completed_at, $progress_status, $progress_percentage, $task_id, $_SESSION['user_id']]);
+
+require 'API/regenerate.php';
 
 header('Content-Type: application/json');
 echo json_encode(['success' => $stmt->rowCount() > 0]);
