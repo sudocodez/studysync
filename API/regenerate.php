@@ -15,9 +15,22 @@ if ($has_tasks && $has_avail) {
     $today = date('Y-m-d');
     $pdo->prepare("DELETE FROM study_plan WHERE user_id = ? AND plan_date >= ? AND status = 'pending'")->execute([$_SESSION['user_id'], $today]);
 
-    $regen_stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'pending' ORDER BY priority DESC, due_date ASC");
+    $regen_stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'pending'");
     $regen_stmt->execute([$_SESSION['user_id']]);
     $tasks = $regen_stmt->fetchAll();
+
+    $now_ts = time();
+    foreach ($tasks as &$t) {
+        $days_until = max(0, (strtotime($t['due_date']) - $now_ts) / 86400);
+        $deadline_urgency = $days_until <= 1 ? 50 : ($days_until <= 3 ? 30 : 0);
+        $effort_urgency = min(20, (float)$t['estimated_hours'] * 3);
+        $t['urgency'] = (int)$t['priority'] + $deadline_urgency + $effort_urgency;
+    }
+    unset($t);
+    usort($tasks, function ($a, $b) {
+        if ($b['urgency'] !== $a['urgency']) return $b['urgency'] - $a['urgency'];
+        return strcmp($a['due_date'], $b['due_date']);
+    });
 
     $regen_stmt = $pdo->prepare("SELECT * FROM available_time WHERE user_id = ? ORDER BY is_recurring DESC, day_of_week, start_time");
     $regen_stmt->execute([$_SESSION['user_id']]);

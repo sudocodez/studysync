@@ -75,6 +75,12 @@ if (isset($pdo, $_SESSION['user_id'])) {
             </svg>
             <span class="nav-text">Profile</span>
         </a>
+        <a href="weekly_summary.php" class="nav-item <?= $current_page === 'weekly_summary.php' ? 'active' : '' ?>">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span class="nav-text">Weekly Summary</span>
+        </a>
         <a href="add_course.php" class="nav-item <?= $current_page === 'add_course.php' ? 'active' : '' ?>">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -130,6 +136,9 @@ if (isset($pdo, $_SESSION['user_id'])) {
     <span></span>
     <span></span>
 </button>
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <!-- Floating Chat Button -->
 <div class="chat-fab">
@@ -332,8 +341,10 @@ function toggleDarkMode() {
 // Sidebar toggle for mobile
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
     const btn = document.getElementById('hamburgerBtn');
     sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('open');
     if (btn) btn.classList.toggle('open');
 }
 

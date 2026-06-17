@@ -70,6 +70,8 @@ for ($h = 6; $h <= 22; $h++) {
         .cal-event:hover { overflow: visible; white-space: normal; }
         .empty-state { text-align: center; padding: 48px; color: var(--text-muted); }
         .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .cal-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .cal-scroll .cal-grid { min-width: 640px; }
         @media (max-width: 900px) { .cal-grid { font-size: 10px; grid-template-columns: 50px repeat(7, 1fr); } .cal-header { font-size: 10px; } }
     </style>
 </head>
@@ -97,6 +99,7 @@ for ($h = 6; $h <= 22; $h++) {
                 </div>
             <?php endif; ?>
 
+            <div class="cal-scroll">
             <div class="cal-grid">
                 <div class="cal-header" style="border-right: 1px solid var(--border);">Time</div>
                 <?php foreach ($days as $d): ?>
@@ -131,6 +134,7 @@ for ($h = 6; $h <= 22; $h++) {
                         <div class="cal-cell<?= $is_today ? ' today' : '' ?>"><?= $events_html ?></div>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
+            </div>
             </div>
         </main>
     </div>

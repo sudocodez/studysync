@@ -19,6 +19,8 @@ $type_icons = [
     'success' => '✅',
     'info' => 'ℹ️',
     'warning' => '⚡',
+    'wellness' => '🧘',
+    'weekly_summary' => '📊',
 ];
 ?>
 <!DOCTYPE html>
@@ -77,6 +79,8 @@ $type_icons = [
                 <button class="filter-btn" data-filter="deadline" onclick="filterNotif(this, 'deadline')">⚠️ Deadlines</button>
                 <button class="filter-btn" data-filter="overdue" onclick="filterNotif(this, 'overdue')">🔴 Overdue</button>
                 <button class="filter-btn" data-filter="success" onclick="filterNotif(this, 'success')">✅ Success</button>
+                <button class="filter-btn" data-filter="wellness" onclick="filterNotif(this, 'wellness')">🧘 Wellness</button>
+                <button class="filter-btn" data-filter="weekly_summary" onclick="filterNotif(this, 'weekly_summary')">📊 Summary</button>
             </div>
 
             <?php if (count($notifications) > 0): ?>

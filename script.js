@@ -10,7 +10,7 @@ function fetchAlerts() {
             if (data.alerts && data.alerts.length > 0) {
                 data.alerts.forEach(alert => {
                     showToast(alert.message, alert.type);
-                    if (alert.type === 'now' || alert.type === 'overdue') {
+                    if (alert.type === 'now' || alert.type === 'upcoming' || alert.type === 'deadline' || alert.type === 'overdue') {
                         playAlertSound();
                     }
                 });
@@ -35,12 +35,9 @@ function fetchUnreadCount() {
 
 function updateBadge(count) {
     const badge = document.getElementById('notifBadge');
-    if (!badge) return;
-    if (count > 0) {
+    if (badge) {
         badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = '';
-    } else {
-        badge.style.display = 'none';
+        badge.style.display = count > 0 ? '' : 'none';
     }
 }
 
@@ -89,15 +86,20 @@ function showToast(message, type) {
 function playAlertSound() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        gain.gain.value = 0.3;
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1);
-        osc.stop(ctx.currentTime + 0.5);
+        const playTone = (freq, start, duration) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, start);
+            gain.gain.exponentialRampToValueAtTime(0.00001, start + duration);
+            osc.start(start);
+            osc.stop(start + duration);
+        };
+        playTone(880, ctx.currentTime, 0.15);
+        playTone(1100, ctx.currentTime + 0.2, 0.15);
+        playTone(880, ctx.currentTime + 0.4, 0.15);
         ctx.resume();
     } catch (e) {}
 }

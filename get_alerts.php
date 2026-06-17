@@ -154,11 +154,107 @@ foreach ($overdue_tasks as $task) {
 }
 
 // ──────────────────────────────────────────────
-// 4. RETURN UNREAD COUNT + NEW ALERTS
+// 4. BURNOUT DETECTION
+// ──────────────────────────────────────────────
+$burnout_alerts = [];
+
+// 4a. Weekly overload check (>35h scheduled this week)
+$monday = date('Y-m-d', strtotime('monday this week'));
+$sunday = date('Y-m-d', strtotime('sunday this week'));
+
+$stmt = $pdo->prepare("SELECT start_time, end_time FROM study_plan WHERE user_id = ? AND plan_date BETWEEN ? AND ? AND status = 'pending'");
+$stmt->execute([$user_id, $monday, $sunday]);
+$week_sessions = $stmt->fetchAll();
+
+$week_total_mins = 0;
+foreach ($week_sessions as $s) {
+    $s_ts = strtotime($s['start_time']);
+    $e_ts = strtotime($s['end_time']);
+    if ($e_ts > $s_ts) {
+        $week_total_mins += ($e_ts - $s_ts) / 60;
+    }
+}
+
+if ($week_total_mins > 2100) {
+    $hours = round($week_total_mins / 60, 1);
+    $title = 'High Workload This Week';
+    $message = "You have {$hours}h of study scheduled this week. Consider reducing to 35h or less to prevent burnout. Quality over quantity!";
+    $inserted = insertNotification($pdo, $user_id, 'wellness', $title, $message, 'dashboard.php');
+    if ($inserted) {
+        $burnout_alerts[] = ['type' => 'wellness', 'title' => $title, 'message' => $message];
+    }
+}
+
+// 4b. Late-night session check (ends after 10 PM today or tomorrow)
+for ($day_offset = 0; $day_offset <= 1; $day_offset++) {
+    $check_date = date('Y-m-d', $now_ts + ($day_offset * 86400));
+    $stmt = $pdo->prepare("SELECT id, task_title, start_time, end_time FROM study_plan WHERE user_id = ? AND plan_date = ? AND status = 'pending'");
+    $stmt->execute([$user_id, $check_date]);
+    $day_sessions = $stmt->fetchAll();
+
+    foreach ($day_sessions as $s) {
+        if (strtotime($s['end_time']) >= strtotime('22:00')) {
+            $title = 'Late-Night Study Session';
+            $message = "{$s['task_title']} ends at {$s['end_time']} — late study can disrupt sleep. Try to wrap up by 10 PM for better rest and retention.";
+            $inserted = insertNotification($pdo, $user_id, 'wellness', $title, $message, 'dashboard.php');
+            if ($inserted) {
+                $burnout_alerts[] = ['type' => 'wellness', 'title' => $title, 'message' => $message];
+            }
+        }
+    }
+}
+
+// 4c. Consecutive study days without rest (past sessions only)
+$stmt = $pdo->prepare("SELECT DISTINCT DATE(start_time) as study_date FROM study_sessions WHERE user_id = ? AND start_time >= ? ORDER BY study_date DESC");
+$stmt->execute([$user_id, date('Y-m-d', $now_ts - 518400)]); // last 6 days
+$study_dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$consecutive_count = count($study_dates) > 0 ? 1 : 0;
+for ($i = 1; $i < count($study_dates); $i++) {
+    $diff = (strtotime($study_dates[$i - 1]) - strtotime($study_dates[$i])) / 86400;
+    if ($diff <= 1.5) {
+        $consecutive_count++;
+    } else {
+        break;
+    }
+}
+
+if ($consecutive_count >= 6) {
+    $title = 'Time for a Rest Day';
+    $message = "You've studied {$consecutive_count} days in a row. Taking a rest day helps memory consolidation and prevents burnout. Consider a break!";
+    $inserted = insertNotification($pdo, $user_id, 'wellness', $title, $message, 'dashboard.php');
+    if ($inserted) {
+        $burnout_alerts[] = ['type' => 'wellness', 'title' => $title, 'message' => $message];
+    }
+}
+
+// ──────────────────────────────────────────────
+// 5. WEEKLY SUMMARY PROMPT
+// ──────────────────────────────────────────────
+$prev_monday = date('Y-m-d', strtotime('monday last week'));
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'weekly_summary' AND created_at >= ?");
+$stmt->execute([$user_id, $monday]);
+if ((int)$stmt->fetchColumn() === 0) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM study_sessions WHERE user_id = ? AND start_time >= ? AND start_time < ?");
+    $stmt->execute([$user_id, $prev_monday, $monday]);
+    $last_week_sessions = (int)$stmt->fetchColumn();
+    if ($last_week_sessions > 0) {
+        $title = 'Weekly Summary Ready';
+        $message = 'Your performance summary for last week is available. See what worked and what needs attention.';
+        $inserted = insertNotification($pdo, $user_id, 'weekly_summary', $title, $message, 'weekly_summary.php');
+        if ($inserted) {
+            $alerts_data[] = ['type' => 'weekly_summary', 'title' => $title, 'message' => $message];
+        }
+    }
+}
+// ──────────────────────────────────────────────
+// 6. RETURN UNREAD COUNT + NEW ALERTS
 // ──────────────────────────────────────────────
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
 $stmt->execute([$user_id]);
 $unread_count = (int)$stmt->fetchColumn();
+
+$alerts_data = array_merge($alerts_data, $burnout_alerts);
 
 echo json_encode([
     'success' => true,

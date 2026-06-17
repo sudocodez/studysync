@@ -153,6 +153,19 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS productivity_patterns (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            day_of_week TINYINT NOT NULL,
+            time_bucket VARCHAR(10) NOT NULL,
+            sessions_completed INT DEFAULT 0,
+            sessions_on_time INT DEFAULT 0,
+            score DECIMAL(5,2) DEFAULT 0.50,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY (user_id, day_of_week, time_bucket)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
     // MySQL column migrations (check and add missing columns)
@@ -330,6 +343,19 @@ try {
                 is_read INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS productivity_patterns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                day_of_week INTEGER NOT NULL,
+                time_bucket TEXT NOT NULL,
+                sessions_completed INTEGER DEFAULT 0,
+                sessions_on_time INTEGER DEFAULT 0,
+                score REAL DEFAULT 0.50,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE (user_id, day_of_week, time_bucket)
             );
         ");
 

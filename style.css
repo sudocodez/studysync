@@ -366,6 +366,20 @@ body {
     margin-top: 2px;
 }
 
+.timeline-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.timeline-actions button {
+    transition: opacity 0.15s;
+}
+
+.timeline-actions button:hover {
+    opacity: 0.7;
+}
+
 /* Task Items */
 .task-list {
     padding: 0 24px;
@@ -647,39 +661,38 @@ body {
     border: 1px solid var(--border);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .two-column {
-        grid-template-columns: 1fr;
-    }
+/* ============================================
+   WEEKLY TIMETABLE (responsive)
+   ============================================ */
+.weekly-timetable {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
 }
 
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-    }
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    .main-content {
-        margin-left: 0;
-        padding: 20px;
-    }
-    .greeting-title {
-        font-size: 22px;
-    }
-    .hamburger {
-        display: flex;
-    }
-    .top-header .date-time {
-        margin-left: auto;
-    }
+.weekly-timetable > div {
+    min-width: 630px;
 }
 
-/* Hamburger menu button */
+/* ============================================
+   SIDEBAR OVERLAY (mobile only)
+   ============================================ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+}
+
+.sidebar-overlay.open {
+    display: block;
+}
+
+/* Hamburger menu button (base before responsive overrides) */
 .hamburger {
     display: none;
     width: 40px;
@@ -721,6 +734,146 @@ body {
 }
 .hamburger.open span:nth-child(3) {
     transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 101;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+    }
+    .sidebar-overlay.open {
+        display: block;
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 20px 16px 24px;
+    }
+    .hamburger {
+        display: flex;
+        z-index: 200;
+    }
+    .top-header {
+        padding-left: 52px;
+    }
+    .top-header .date-time {
+        margin-left: auto;
+    }
+    .greeting-section {
+        padding: 24px 20px;
+    }
+    .greeting-title {
+        font-size: 20px;
+    }
+    .stat-value {
+        font-size: 26px;
+    }
+    .section-header {
+        padding: 16px 16px;
+    }
+    .section-header h2 {
+        font-size: 14px;
+    }
+    .timeline {
+        padding: 0 16px;
+    }
+    .task-list {
+        padding: 0 16px;
+    }
+    .section-card {
+        border-radius: var(--radius-md);
+    }
+    .chat-fab {
+        bottom: 16px;
+        right: 16px;
+    }
+    .chat-window {
+        right: 0;
+        width: 100vw;
+        max-width: 100vw;
+        height: 60vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        bottom: 0;
+        position: fixed;
+    }
+    .chat-window.open {
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 16px 12px 20px;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .top-header {
+        padding-left: 48px;
+    }
+    .top-header .date-time {
+        text-align: left;
+        margin-left: 0;
+    }
+    .time {
+        font-size: 18px;
+    }
+    .date {
+        font-size: 12px;
+    }
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 8px;
+        padding: 20px;
+        border-radius: var(--radius-md);
+    }
+    .auth-card {
+        padding: 28px 20px;
+    }
+    .two-column {
+        gap: 16px;
+    }
+    .greeting-title {
+        font-size: 18px;
+    }
+    .greeting-subtitle {
+        font-size: 13px;
+    }
+    .stat-card {
+        padding: 16px;
+    }
+    .stat-value {
+        font-size: 24px;
+    }
+    .chat-fab {
+        bottom: 12px;
+        right: 12px;
+    }
+    .chat-toggle {
+        width: 48px;
+        height: 48px;
+    }
+    .nav-item {
+        padding: 10px 14px;
+    }
+    .nav-text {
+        font-size: 13px;
+    }
 }
 
 /* Animations */

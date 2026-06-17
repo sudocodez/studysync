@@ -77,6 +77,28 @@ if ($action === 'start') {
                 ->execute([$_SESSION['user_id'], round($duration_mins / 60, 1), $today]);
         }
 
+        // Update productivity pattern for this time slot
+        $start_hour = (int)date('G', strtotime($session['start_time']));
+        $session_dow = (int)date('w', strtotime($session['start_time']));
+        $bucket = $start_hour < 12 ? 'morning' : ($start_hour < 18 ? 'afternoon' : 'evening');
+        $had_plan = !empty($session['plan_id']);
+
+        if ($GLOBALS['db_type'] === 'mysql') {
+            $pdo->prepare("INSERT INTO productivity_patterns (user_id, day_of_week, time_bucket, sessions_completed, sessions_on_time, score) VALUES (?, ?, ?, 1, ?, (1 + 2) / (1 + 4)) ON DUPLICATE KEY UPDATE sessions_completed = sessions_completed + 1, sessions_on_time = sessions_on_time + ?, score = (sessions_on_time + 2.0) / (sessions_completed + 4.0), updated_at = CURRENT_TIMESTAMP")
+                ->execute([$_SESSION['user_id'], $session_dow, $bucket, $had_plan ? 1 : 0, $had_plan ? 1 : 0]);
+        } else {
+            $pdo->prepare("INSERT INTO productivity_patterns (user_id, day_of_week, time_bucket, sessions_completed, sessions_on_time, score) VALUES (?, ?, ?, 0, 0, 0.50)")
+                ->execute([$_SESSION['user_id'], $session_dow, $bucket]);
+            $stmt = $pdo->prepare("SELECT sessions_completed, sessions_on_time FROM productivity_patterns WHERE user_id = ? AND day_of_week = ? AND time_bucket = ?");
+            $stmt->execute([$_SESSION['user_id'], $session_dow, $bucket]);
+            $p = $stmt->fetch();
+            $new_c = $p['sessions_completed'] + 1;
+            $new_o = $p['sessions_on_time'] + ($had_plan ? 1 : 0);
+            $new_s = round(($new_o + 2) / ($new_c + 4), 2);
+            $pdo->prepare("UPDATE productivity_patterns SET sessions_completed = ?, sessions_on_time = ?, score = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND day_of_week = ? AND time_bucket = ?")
+                ->execute([$new_c, $new_o, $new_s, $_SESSION['user_id'], $session_dow, $bucket]);
+        }
+
         $pdo->commit();
         echo json_encode(['success' => true, 'duration_minutes' => $duration_mins]);
     } catch (Exception $e) {

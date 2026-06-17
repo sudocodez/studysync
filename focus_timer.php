@@ -89,6 +89,12 @@
             .main-content { margin-left: 0; padding: 20px; }
             .timer-display { font-size: 48px; }
         }
+        @media (max-width: 480px) {
+            .timer-container { padding: 32px 20px; }
+            .timer-display { font-size: 40px; }
+            .mode-btn { padding: 8px 14px; font-size: 12px; }
+            .timer-btn { padding: 10px 20px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>

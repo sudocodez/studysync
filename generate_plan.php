@@ -6,10 +6,27 @@ $today = date('Y-m-d');
 // Clear old pending plan for today and future (keep completed/missed)
 $pdo->prepare("DELETE FROM study_plan WHERE user_id = ? AND plan_date >= ? AND status = 'pending'")->execute([$_SESSION['user_id'], $today]);
 
-// Get pending tasks sorted by priority then due date
-$stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'pending' ORDER BY priority DESC, due_date ASC");
+// Get pending tasks and calculate urgency score
+$stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'pending'");
 $stmt->execute([$_SESSION['user_id']]);
 $tasks = $stmt->fetchAll();
+
+// Calculate urgency for each task: priority base + deadline proximity + effort
+$now_ts = time();
+foreach ($tasks as &$task) {
+    $days_until_due = max(0, (strtotime($task['due_date']) - $now_ts) / 86400);
+    // Urgency: higher base priority + tighter deadline + more hours needed
+    $deadline_urgency = $days_until_due <= 1 ? 50 : ($days_until_due <= 3 ? 30 : 0);
+    $effort_urgency = min(20, (float)$task['estimated_hours'] * 3);
+    $task['urgency'] = (int)$task['priority'] + $deadline_urgency + $effort_urgency;
+}
+unset($task);
+
+// Sort by urgency descending, then due_date ascending for equal urgency
+usort($tasks, function ($a, $b) {
+    if ($b['urgency'] !== $a['urgency']) return $b['urgency'] - $a['urgency'];
+    return strcmp($a['due_date'], $b['due_date']);
+});
 
 // Get available time slots (recurring + specific date)
 $stmt = $pdo->prepare("SELECT * FROM available_time WHERE user_id = ? ORDER BY is_recurring DESC, day_of_week, start_time");
@@ -53,6 +70,27 @@ for ($offset = 0; $offset < 30; $offset++) {
         }
     }
 }
+
+// Sort blocks by productivity score: within each day, high-scored slots first
+$stmt = $pdo->prepare("SELECT day_of_week, time_bucket, score FROM productivity_patterns WHERE user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$patterns = [];
+while ($row = $stmt->fetch()) {
+    $patterns[$row['day_of_week']][$row['time_bucket']] = (float)$row['score'];
+}
+
+foreach ($schedule_blocks as &$block) {
+    $dow = (int)date('w', strtotime($block['date']));
+    $hour = (int)strtok($block['start_time'], ':');
+    $bucket = $hour < 12 ? 'morning' : ($hour < 18 ? 'afternoon' : 'evening');
+    $block['productivity'] = $patterns[$dow][$bucket] ?? 0.50;
+}
+unset($block);
+
+usort($schedule_blocks, function ($a, $b) {
+    if ($a['date'] !== $b['date']) return strcmp($a['date'], $b['date']);
+    return $b['productivity'] <=> $a['productivity'];
+});
 
 $block_index = 0;
 

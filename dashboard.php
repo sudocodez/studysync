@@ -198,7 +198,8 @@ else $greeting = "Good Evening";
                         }
                         $day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                         ?>
-                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
+                        <div class="weekly-timetable">
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
                             <?php for ($i = 0; $i < 7; $i++):
                                 $date = date('Y-m-d', strtotime("$week_start + $i days"));
                                 $is_today = $date === $today;
@@ -232,6 +233,7 @@ else $greeting = "Good Evening";
                                 </div>
                             <?php endfor; ?>
                         </div>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -242,7 +244,10 @@ else $greeting = "Good Evening";
                 <div class="section-card">
                     <div class="section-header">
                         <h2>Today's Schedule</h2>
-                        <a href="#" onclick="generatePlan()">View all →</a>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <a href="#" onclick="generatePlan()" title="Regenerate full schedule from scratch" style="font-size: 12px;">↻ Regenerate</a>
+                            <a href="calendar.php" style="font-size: 12px;">View all →</a>
+                        </div>
                     </div>
                     <div class="timeline">
                         <?php if(count($today_plan) > 0): ?>
@@ -254,7 +259,11 @@ else $greeting = "Good Evening";
                                         <div class="timeline-title"><?= htmlspecialchars($plan['task_title']) ?></div>
                                         <div class="timeline-meta">Study Session</div>
                                     </div>
-                                    <button onclick="startSession(<?= $plan['id'] ?>)" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 13px;">▶ Start</button>
+                                    <div class="timeline-actions">
+                                        <button onclick="missSession(<?= $plan['id'] ?>)" title="Mark missed and reschedule" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 2px 6px;">✕</button>
+                                        <button onclick="postponeSession(<?= $plan['id'] ?>)" title="Postpone to later date" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 2px 6px;">⏰</button>
+                                        <button onclick="startSession(<?= $plan['id'] ?>)" title="Start this session" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 13px; padding: 2px 6px;">▶</button>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -576,6 +585,22 @@ else $greeting = "Good Evening";
                 body: body
             });
         }
+
+        function rescheduleEntry(planId, action) {
+            if (!confirm(action === 'miss' ? 'Mark this session as missed and reschedule?' : 'Postpone this session to a later date?')) return;
+            const btn = event.target;
+            btn.textContent = '⏳';
+            btn.onclick = null;
+            apiPost('API/reschedule_entry.php', 'plan_id=' + planId + '&action=' + action)
+            .then(r => r.json())
+            .then(data => {
+                location.reload();
+            })
+            .catch(() => location.reload());
+        }
+
+        function missSession(planId) { rescheduleEntry(planId, 'miss', event.target); }
+        function postponeSession(planId) { rescheduleEntry(planId, 'postpone', event.target); }
 
         function startSession(planId) {
             const btn = event.target;
