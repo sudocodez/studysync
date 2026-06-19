@@ -299,7 +299,7 @@ if (isset($pdo, $_SESSION['user_id'])) {
     font-size: 13px;
 }
 [data-theme="dark"] .sidebar-modal-btn {
-    color: #3B3030;
+    color: #1A3C2A;
 }
 .help-section {
     margin-bottom: 18px;

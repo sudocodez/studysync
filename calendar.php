@@ -119,7 +119,7 @@ for ($h = 6; $h <= 22; $h++) {
                                 $start_h = (int)date('H', strtotime($item['start_time']));
                                 $end_h = (int)date('H', strtotime($item['end_time']));
                                 $current_h = (int)substr($hour, 0, 2);
-                                $status_color = $status_colors[$item['status']] ?? '#795757';
+                                $status_color = $status_colors[$item['status']] ?? '#2D6A4F';
 
                                 // Show event in its starting hour cell only
                                 if ($start_h === $current_h) {
