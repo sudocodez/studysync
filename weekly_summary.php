@@ -252,49 +252,43 @@ if ($overdue > 2) {
                 <!-- Session completion -->
                 <div class="card">
                     <h2>Session Completion</h2>
-                    <?php if ($total_planned > 0): ?>
                     <div class="pie-container">
                         <svg class="pie-svg" viewBox="0 0 36 36">
                             <?php
                             $total = max(1, $plan_completed + $plan_missed + $plan_pending);
-                            $comp_angle = round($plan_completed / $total * 360);
-                            $miss_angle = round($plan_missed / $total * 360);
-                            $pend_angle = 360 - $comp_angle - $miss_angle;
-                            // Completed arc
                             $r = 15.9155;
-                            $cx = 18; $cy = 18;
                             $pct = round($plan_completed / $total * 100);
                             $circumference = 2 * pi() * $r;
-                            $comp_len = $circumference * $plan_completed / $total;
-                            $miss_len = $circumference * $plan_missed / $total;
-                            $pend_len = $circumference * $plan_pending / $total;
+                            $comp_len = $circumference * max(0, $plan_completed) / $total;
+                            $miss_len = $circumference * max(0, $plan_missed) / $total;
+                            $pend_len = $circumference * max(0, $plan_pending) / $total;
                             ?>
-                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="#e5e7eb" stroke-width="3.5"/>
+                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="var(--border)" stroke-width="3.5"/>
                             <?php if ($plan_completed > 0): ?>
-                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="#10b981" stroke-width="3.5"
+                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="var(--success)" stroke-width="3.5"
                                 stroke-dasharray="<?= $comp_len ?> <?= $circumference - $comp_len ?>"
-                                stroke-dashoffset="0" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 0.6s;"/>
+                                stroke-dashoffset="0" transform="rotate(-90 18 18)"/>
                             <?php endif; ?>
                             <?php if ($plan_missed > 0): ?>
-                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="#ef4444" stroke-width="3.5"
+                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="var(--danger)" stroke-width="3.5"
                                 stroke-dasharray="<?= $miss_len ?> <?= $circumference - $miss_len ?>"
-                                stroke-dashoffset="<?= -$comp_len ?>" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 0.6s;"/>
+                                stroke-dashoffset="<?= -$comp_len ?>" transform="rotate(-90 18 18)"/>
                             <?php endif; ?>
                             <?php if ($plan_pending > 0): ?>
-                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="#eab308" stroke-width="3.5"
+                            <circle cx="18" cy="18" r="<?= $r ?>" fill="none" stroke="var(--warning)" stroke-width="3.5"
                                 stroke-dasharray="<?= $pend_len ?> <?= $circumference - $pend_len ?>"
-                                stroke-dashoffset="<?= -($comp_len + $miss_len) ?>" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 0.6s;"/>
+                                stroke-dashoffset="<?= -($comp_len + $miss_len) ?>" transform="rotate(-90 18 18)"/>
                             <?php endif; ?>
                             <text x="18" y="20" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor"><?= $pct ?>%</text>
                         </svg>
                         <div class="pie-legend">
-                            <div class="pie-legend-item"><span class="legend-dot" style="background:#10b981"></span> Completed (<?= $plan_completed ?>)</div>
-                            <div class="pie-legend-item"><span class="legend-dot" style="background:#ef4444"></span> Missed (<?= $plan_missed ?>)</div>
-                            <div class="pie-legend-item"><span class="legend-dot" style="background:#eab308"></span> Pending (<?= $plan_pending ?>)</div>
+                            <div class="pie-legend-item"><span class="legend-dot" style="background:var(--success)"></span> Completed (<?= $plan_completed ?>)</div>
+                            <div class="pie-legend-item"><span class="legend-dot" style="background:var(--danger)"></span> Missed (<?= $plan_missed ?>)</div>
+                            <div class="pie-legend-item"><span class="legend-dot" style="background:var(--warning)"></span> Pending (<?= $plan_pending ?>)</div>
                         </div>
                     </div>
-                    <?php else: ?>
-                    <div class="empty-state">No study plan sessions this week.<br>Generate your plan from the Dashboard.</div>
+                    <?php if ($total_planned === 0): ?>
+                    <div style="text-align:center; margin-top: 8px; font-size: 12px; color: var(--text-muted);">No sessions planned yet. <a href="dashboard.php" style="color:var(--accent)">Generate a plan</a> to see your breakdown.</div>
                     <?php endif; ?>
                 </div>
 
