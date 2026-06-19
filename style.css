@@ -100,24 +100,15 @@ body {
 }
 
 .logo-icon {
-    width: 40px;
-    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
 }
 
 .logo-img {
-    height: 56px;
+    height: 32px;
     width: auto;
-    object-fit: cover;
-    object-position: top;
-    clip-path: inset(0 0 30% 0);
-}
-
-[data-theme="dark"] .logo-img {
-    filter: brightness(1.1);
+    display: block;
 }
 
 .logo-text {
