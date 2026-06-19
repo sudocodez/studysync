@@ -898,6 +898,8 @@ body {
     justify-content: center;
     padding: 24px;
     background: var(--bg-primary);
+    position: relative;
+    z-index: 1;
 }
 
 .auth-card {
