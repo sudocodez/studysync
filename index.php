@@ -39,13 +39,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <div class="logo-icon" style="margin: 0 auto 16px; width: 50px; height: 50px;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                        <circle cx="16" cy="8" r="3" stroke-width="1.2"/>
-                        <path d="M14.5 9.5 16 8l1.5 1.5"/>
-                    </svg>
+                <div class="logo-icon" style="margin: 0 auto 16px; width: 60px; height: 60px; border-radius: 50%; overflow: hidden;">
+                    <img src="logo1.png" alt="Kiut" style="width:100%;height:100%;object-fit:cover;display:block;">
                 </div>
                 <h1>StudySync</h1>
                 <p>Intelligent Study Planner & Scheduler</p>
