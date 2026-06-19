@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             position: absolute;
             font-size: 42px;
             font-weight: 300;
-            opacity: 0.08;
+            opacity: 0.2;
             color: var(--text-primary);
             user-select: none;
             animation: floatUp var(--dur, 20s) ease-in-out infinite alternate;
@@ -54,60 +54,36 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         @keyframes floatUp {
             0%   { transform: translateY(0px) rotate(0deg) scale(1); }
-            33%  { transform: translateY(-30px) rotate(4deg) scale(1.05); }
+            33%  { transform: translateY(-30px) rotate(4deg) scale(1.08); }
             66%  { transform: translateY(-10px) rotate(-3deg) scale(0.95); }
-            100% { transform: translateY(-20px) rotate(2deg) scale(1.02); }
-        }
-        .bg-animations .shape {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-        }
-        .bg-animations .shape.book {
-            width: 32px;
-            height: 40px;
-            border-radius: 2px;
-            border: 2px solid var(--text-primary);
-            background: transparent;
-        }
-        .bg-animations .shape.atom {
-            width: 50px;
-            height: 50px;
-            border: 2px solid var(--text-primary);
-            border-radius: 50%;
-            background: transparent;
-        }
-        .bg-animations .shape.atom::after {
-            content: '';
-            position: absolute;
-            inset: 4px;
-            border: 2px solid var(--text-primary);
-            border-radius: 50%;
-            opacity: 0.5;
+            100% { transform: translateY(-20px) rotate(2deg) scale(1.03); }
         }
         /* Dark mode: slightly more visible */
         [data-theme="dark"] .bg-animations span {
-            opacity: 0.12;
+            opacity: 0.25;
         }
     </style>
 </head>
 <body>
     <div class="bg-animations">
-        <span style="top:5%;left:8%;--dur:22s;--del:0s;font-size:52px;">∫</span>
-        <span style="top:15%;right:12%;--dur:26s;--del:2s;font-size:44px;">Σ</span>
-        <span style="top:30%;left:5%;--dur:20s;--del:4s;font-size:48px;">π</span>
-        <span style="top:45%;right:8%;--dur:24s;--del:1s;font-size:38px;">√</span>
-        <span style="top:55%;left:10%;--dur:28s;--del:3s;font-size:40px;">α</span>
-        <span style="top:65%;right:6%;--dur:21s;--del:5s;font-size:46px;">β</span>
-        <span style="top:75%;left:15%;--dur:25s;--del:2s;font-size:36px;">γ</span>
+        <span style="top:5%;left:8%;--dur:22s;--del:0s;font-size:52px;">&#8747;</span>
+        <span style="top:15%;right:12%;--dur:26s;--del:2s;font-size:44px;">&#931;</span>
+        <span style="top:30%;left:5%;--dur:20s;--del:4s;font-size:48px;">&#960;</span>
+        <span style="top:45%;right:8%;--dur:24s;--del:1s;font-size:38px;">&#8730;</span>
+        <span style="top:55%;left:10%;--dur:28s;--del:3s;font-size:40px;">&#945;</span>
+        <span style="top:65%;right:6%;--dur:21s;--del:5s;font-size:46px;">&#946;</span>
+        <span style="top:75%;left:15%;--dur:25s;--del:2s;font-size:36px;">&#947;</span>
         <span style="top:8%;right:20%;--dur:23s;--del:6s;font-size:34px;">f(x)</span>
-        <span style="top:50%;left:20%;--dur:27s;--del:7s;font-size:36px;">E=mc²</span>
-        <span style="top:35%;right:18%;--dur:22s;--del:8s;font-size:40px;">x²+y²=r²</span>
-        <span style="top:20%;left:22%;--dur:29s;--del:0s;font-size:30px;">H₂O</span>
-        <span style="top:70%;right:22%;--dur:24s;--del:4s;font-size:32px;">Δ</span>
-        <span style="top:85%;left:8%;--dur:26s;--del:1s;font-size:38px;">∑</span>
-        <span style="top:40%;left:2%;--dur:30s;--del:9s;font-size:44px;">∂</span>
+        <span style="top:50%;left:20%;--dur:27s;--del:7s;font-size:36px;">E=mc&sup2;</span>
+        <span style="top:35%;right:18%;--dur:22s;--del:8s;font-size:40px;">x&sup2;+y&sup2;=r&sup2;</span>
+        <span style="top:20%;left:22%;--dur:29s;--del:0s;font-size:30px;">H&sub2;O</span>
+        <span style="top:70%;right:22%;--dur:24s;--del:4s;font-size:32px;">&#916;</span>
+        <span style="top:85%;left:8%;--dur:26s;--del:1s;font-size:38px;">&#8721;</span>
+        <span style="top:40%;left:2%;--dur:30s;--del:9s;font-size:44px;">&#8706;</span>
         <span style="top:60%;right:3%;--dur:22s;--del:6s;font-size:40px;">lim</span>
+        <span style="top:10%;left:35%;--dur:28s;--del:3s;font-size:36px;">&#8734;</span>
+        <span style="top:80%;right:15%;--dur:24s;--del:5s;font-size:32px;">&#8862;</span>
+        <span style="top:25%;right:25%;--dur:26s;--del:7s;font-size:38px;">&#9001;x&#9002;</span>
     </div>
     <div class="auth-container">
         <div class="auth-card">
