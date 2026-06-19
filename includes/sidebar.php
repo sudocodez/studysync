@@ -318,6 +318,7 @@ if (isset($pdo, $_SESSION['user_id'])) {
 }
 </style>
 
+<script src="script.js"></script>
 <script>
 var CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
 

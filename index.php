@@ -35,55 +35,90 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>StudySync | Intelligent Study Planner</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .bg-animations {
+        .bg-layer {
             position: fixed;
             inset: 0;
-            pointer-events: none;
             z-index: 0;
             overflow: hidden;
+            background: var(--bg-primary);
+        }
+        .bg-animations {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
         }
         .bg-animations span {
             position: absolute;
-            font-size: 42px;
-            font-weight: 300;
-            opacity: 0.2;
-            color: var(--text-primary);
+            font-size: 38px;
+            opacity: 0.45;
             user-select: none;
-            animation: floatUp var(--dur, 20s) ease-in-out infinite alternate;
+            animation: floatMove var(--dur, 12s) ease-in-out infinite alternate;
             animation-delay: var(--del, 0s);
+            will-change: transform;
         }
-        @keyframes floatUp {
-            0%   { transform: translateY(0px) rotate(0deg) scale(1); }
-            33%  { transform: translateY(-30px) rotate(4deg) scale(1.08); }
-            66%  { transform: translateY(-10px) rotate(-3deg) scale(0.95); }
-            100% { transform: translateY(-20px) rotate(2deg) scale(1.03); }
+        @keyframes floatMove {
+            0%   { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+            25%  { transform: translate(20px, -25px) rotate(3deg) scale(1.06); }
+            50%  { transform: translate(-15px, -35px) rotate(-4deg) scale(0.96); }
+            75%  { transform: translate(25px, -15px) rotate(2deg) scale(1.03); }
+            100% { transform: translate(-10px, -30px) rotate(-2deg) scale(1); }
         }
-        /* Dark mode: slightly more visible */
+        .bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(135deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.10) 100%);
+        }
+        [data-theme="dark"] .bg-overlay {
+            background: linear-gradient(135deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0.20) 100%);
+        }
         [data-theme="dark"] .bg-animations span {
-            opacity: 0.25;
+            opacity: 0.55;
+        }
+        .bg-animations span b {
+            display: inline-block;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <div class="bg-animations">
-        <span style="top:5%;left:8%;--dur:22s;--del:0s;font-size:52px;">&#8747;</span>
-        <span style="top:15%;right:12%;--dur:26s;--del:2s;font-size:44px;">&#931;</span>
-        <span style="top:30%;left:5%;--dur:20s;--del:4s;font-size:48px;">&#960;</span>
-        <span style="top:45%;right:8%;--dur:24s;--del:1s;font-size:38px;">&#8730;</span>
-        <span style="top:55%;left:10%;--dur:28s;--del:3s;font-size:40px;">&#945;</span>
-        <span style="top:65%;right:6%;--dur:21s;--del:5s;font-size:46px;">&#946;</span>
-        <span style="top:75%;left:15%;--dur:25s;--del:2s;font-size:36px;">&#947;</span>
-        <span style="top:8%;right:20%;--dur:23s;--del:6s;font-size:34px;">f(x)</span>
-        <span style="top:50%;left:20%;--dur:27s;--del:7s;font-size:36px;">E=mc&sup2;</span>
-        <span style="top:35%;right:18%;--dur:22s;--del:8s;font-size:40px;">x&sup2;+y&sup2;=r&sup2;</span>
-        <span style="top:20%;left:22%;--dur:29s;--del:0s;font-size:30px;">H&sub2;O</span>
-        <span style="top:70%;right:22%;--dur:24s;--del:4s;font-size:32px;">&#916;</span>
-        <span style="top:85%;left:8%;--dur:26s;--del:1s;font-size:38px;">&#8721;</span>
-        <span style="top:40%;left:2%;--dur:30s;--del:9s;font-size:44px;">&#8706;</span>
-        <span style="top:60%;right:3%;--dur:22s;--del:6s;font-size:40px;">lim</span>
-        <span style="top:10%;left:35%;--dur:28s;--del:3s;font-size:36px;">&#8734;</span>
-        <span style="top:80%;right:15%;--dur:24s;--del:5s;font-size:32px;">&#8862;</span>
-        <span style="top:25%;right:25%;--dur:26s;--del:7s;font-size:38px;">&#9001;x&#9002;</span>
+    <div class="bg-layer">
+        <div class="bg-animations" id="bgAnimations">
+            <span style="top:4%;left:6%;--dur:11s;--del:0s;"><b>📚</b></span>
+            <span style="top:12%;right:10%;--dur:13s;--del:1s;"><b>✏️</b></span>
+            <span style="top:22%;left:3%;--dur:10s;--del:3s;"><b>🎓</b></span>
+            <span style="top:35%;right:5%;--dur:14s;--del:2s;"><b>📝</b></span>
+            <span style="top:48%;left:8%;--dur:12s;--del:4s;"><b>⚗️</b></span>
+            <span style="top:58%;right:8%;--dur:15s;--del:1s;"><b>🔬</b></span>
+            <span style="top:68%;left:4%;--dur:11s;--del:5s;"><b>📐</b></span>
+            <span style="top:78%;right:3%;--dur:13s;--del:2s;"><b>💡</b></span>
+            <span style="top:6%;left:28%;--dur:14s;--del:6s;"><b>🧮</b></span>
+            <span style="top:18%;right:25%;--dur:10s;--del:0s;"><b>📖</b></span>
+            <span style="top:42%;left:22%;--dur:12s;--del:3s;"><b>🖋️</b></span>
+            <span style="top:55%;right:22%;--dur:15s;--del:7s;"><b>🏆</b></span>
+            <span style="top:72%;left:18%;--dur:11s;--del:2s;"><b>🧪</b></span>
+            <span style="top:88%;right:15%;--dur:13s;--del:4s;"><b>📊</b></span>
+            <span style="top:30%;left:35%;--dur:10s;--del:5s;"><b>🔭</b></span>
+            <span style="top:65%;right:18%;--dur:14s;--del:6s;"><b>💻</b></span>
+            <span style="top:10%;left:50%;--dur:12s;--del:1s;"><b>⏳</b></span>
+            <span style="top:50%;left:45%;--dur:15s;--del:8s;"><b>🧠</b></span>
+            <span style="top:8%;left:70%;--dur:13s;--del:9s;"><b>🎯</b></span>
+            <span style="top:20%;right:35%;--dur:11s;--del:4s;"><b>📌</b></span>
+            <span style="top:38%;left:55%;--dur:14s;--del:7s;"><b>⭐</b></span>
+            <span style="top:55%;left:30%;--dur:12s;--del:2s;"><b>🔥</b></span>
+            <span style="top:75%;right:30%;--dur:10s;--del:5s;"><b>💯</b></span>
+            <span style="top:15%;left:15%;--dur:15s;--del:8s;"><b>🎵</b></span>
+            <span style="top:40%;right:28%;--dur:13s;--del:3s;"><b>📋</b></span>
+            <span style="top:60%;left:38%;--dur:11s;--del:6s;"><b>⚡</b></span>
+            <span style="top:82%;right:8%;--dur:14s;--del:9s;"><b>☕</b></span>
+            <span style="top:25%;left:45%;--dur:12s;--del:1s;"><b>🎧</b></span>
+            <span style="top:70%;left:28%;--dur:10s;--del:4s;"><b>🌙</b></span>
+            <span style="top:5%;right:35%;--dur:15s;--del:7s;"><b>💪</b></span>
+            <span style="top:45%;left:70%;--dur:13s;--del:2s;"><b>✅</b></span>
+            <span style="top:90%;left:10%;--dur:11s;--del:6s;"><b>🎨</b></span>
+        </div>
+        <div class="bg-overlay"></div>
     </div>
     <div class="auth-container">
         <div class="auth-card">
@@ -138,5 +173,35 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             </form>
         </div>
     </div>
+    <script>
+        (function() {
+            const container = document.getElementById('bgAnimations');
+            if (!container) return;
+            const items = container.querySelectorAll('span b');
+            let mouseX = -9999, mouseY = -9999;
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            function tick() {
+                items.forEach(function(el) {
+                    const rect = el.getBoundingClientRect();
+                    const cx = rect.left + rect.width/2;
+                    const cy = rect.top + rect.height/2;
+                    const dx = mouseX - cx;
+                    const dy = mouseY - cy;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 180) {
+                        const strength = (1 - dist/180) * 0.6;
+                        el.style.transform = 'translate(' + (dx * strength).toFixed(1) + 'px,' + (dy * strength).toFixed(1) + 'px)';
+                    } else {
+                        el.style.transform = '';
+                    }
+                });
+                requestAnimationFrame(tick);
+            }
+            tick();
+        })();
+    </script>
 </body>
 </html>

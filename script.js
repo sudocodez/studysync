@@ -11,7 +11,7 @@ function fetchAlerts() {
                 data.alerts.forEach(alert => {
                     showToast(alert.message, alert.type);
                     if (alert.type === 'now' || alert.type === 'upcoming' || alert.type === 'deadline' || alert.type === 'overdue') {
-                        playAlertSound();
+                        triggerAlarm(alert.message, alert.type);
                     }
                 });
             }
@@ -83,32 +83,84 @@ function showToast(message, type) {
     setTimeout(() => { if (toast.parentNode) toast.remove(); }, 12000);
 }
 
-function playAlertSound() {
+let alarmCtx = null;
+let alarmTimer = null;
+let alarmOverlay = null;
+
+function triggerAlarm(message, type) {
+    if (alarmOverlay) return;
+
+    alarmOverlay = document.createElement('div');
+    alarmOverlay.id = 'alarmOverlay';
+    alarmOverlay.innerHTML = `
+        <div class="alarm-card">
+            <div class="alarm-icon">🔔</div>
+            <div class="alarm-title">${type === 'now' ? 'SESSION STARTING NOW' : type === 'upcoming' ? 'SESSION STARTING SOON' : type === 'deadline' ? 'DEADLINE APPROACHING' : 'OVERDUE — TAKE ACTION'}</div>
+            <div class="alarm-msg">${message}</div>
+            <button class="alarm-dismiss" onclick="dismissAlarm()">✕ DISMISS ALARM</button>
+        </div>
+    `;
+    document.body.appendChild(alarmOverlay);
+
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const playTone = (freq, start, duration) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+        alarmCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var high = true;
+        function beep() {
+            if (!alarmCtx) return;
+            var osc = alarmCtx.createOscillator();
+            var gain = alarmCtx.createGain();
             osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.3, start);
-            gain.gain.exponentialRampToValueAtTime(0.00001, start + duration);
-            osc.start(start);
-            osc.stop(start + duration);
-        };
-        playTone(880, ctx.currentTime, 0.15);
-        playTone(1100, ctx.currentTime + 0.2, 0.15);
-        playTone(880, ctx.currentTime + 0.4, 0.15);
-        ctx.resume();
-    } catch (e) {}
+            gain.connect(alarmCtx.destination);
+            osc.type = 'square';
+            osc.frequency.value = high ? 1000 : 800;
+            high = !high;
+            gain.gain.setValueAtTime(0.5, alarmCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, alarmCtx.currentTime + 0.28);
+            osc.start(alarmCtx.currentTime);
+            osc.stop(alarmCtx.currentTime + 0.28);
+            alarmTimer = setTimeout(beep, 300);
+        }
+        beep();
+        alarmCtx.resume();
+    } catch (e) { alarmCtx = null; }
 }
 
-// Inject toast animation
-if (!document.getElementById('toast-styles')) {
-    const s = document.createElement('style');
-    s.id = 'toast-styles';
+function dismissAlarm() {
+    if (alarmTimer) { clearTimeout(alarmTimer); alarmTimer = null; }
+    if (alarmCtx) { alarmCtx.close(); alarmCtx = null; }
+    if (alarmOverlay) { alarmOverlay.remove(); alarmOverlay = null; }
+}
+
+// Inject styles
+if (!document.getElementById('alarm-styles')) {
+    var s = document.createElement('style');
+    s.id = 'alarm-styles';
     s.textContent = `
+        #alarmOverlay {
+            position: fixed; inset: 0; z-index: 99999;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            animation: alarmFadeIn 0.3s ease;
+        }
+        .alarm-card {
+            background: #1a1a1a; border-radius: 20px; padding: 48px 40px 36px;
+            text-align: center; max-width: 460px; width: 90%;
+            box-shadow: 0 0 60px rgba(255,50,50,0.3);
+            border: 2px solid #ff3333;
+            animation: alarmPulse 0.6s ease-in-out infinite alternate;
+        }
+        .alarm-icon { font-size: 64px; margin-bottom: 16px; animation: alarmShake 0.3s ease-in-out infinite alternate; }
+        .alarm-title { font-size: 22px; font-weight: 800; color: #ff4444; margin-bottom: 12px; letter-spacing: 1px; }
+        .alarm-msg { font-size: 15px; color: #ccc; margin-bottom: 28px; line-height: 1.5; }
+        .alarm-dismiss {
+            background: #ff3333; color: white; border: none; border-radius: 12px;
+            padding: 14px 40px; font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: background 0.2s; letter-spacing: 1px;
+        }
+        .alarm-dismiss:hover { background: #cc0000; }
+        @keyframes alarmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes alarmPulse { from { box-shadow: 0 0 40px rgba(255,50,50,0.2); } to { box-shadow: 0 0 80px rgba(255,50,50,0.5); } }
+        @keyframes alarmShake { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
         @keyframes slideInRight {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -122,7 +174,7 @@ if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
 }
 
-// Browser notification helper (fallback when tab is not focused)
+// Browser notification helper
 function sendBrowserNotification(title, body) {
     if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
         new Notification(title, { body });
@@ -134,6 +186,6 @@ window.addEventListener('beforeunload', () => {
     localStorage.setItem('scrollPos', window.scrollY);
 });
 window.addEventListener('load', () => {
-    const pos = localStorage.getItem('scrollPos');
+    var pos = localStorage.getItem('scrollPos');
     if (pos) window.scrollTo(0, parseInt(pos));
 });

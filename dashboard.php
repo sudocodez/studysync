@@ -656,5 +656,6 @@ else $greeting = "Good Evening";
             }).then(() => location.reload());
         }
     </script>
+    <script src="script.js"></script>
 </body>
 </html>
