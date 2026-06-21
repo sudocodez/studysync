@@ -17,6 +17,7 @@ $completed_sessions = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activities | StudySync</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="liquid-glass.css">
     <style>
         .page-header { margin-bottom: 24px; }
         .page-header h1 { font-size: 24px; font-weight: 600; }

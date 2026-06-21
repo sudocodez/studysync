@@ -53,6 +53,7 @@ for ($h = 6; $h <= 22; $h++) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar | StudySync</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="liquid-glass.css">
     <style>
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .page-header h1 { font-size: 24px; font-weight: 600; }

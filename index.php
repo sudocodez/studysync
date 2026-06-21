@@ -34,6 +34,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StudySync | Intelligent Study Planner</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="liquid-glass.css">
     <style>
         .bg-layer {
             position: fixed;

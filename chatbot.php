@@ -438,6 +438,7 @@ $chat_history = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Assistant | StudySync</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="liquid-glass.css">
     <style>
         .chat-container {
             max-width: 900px;

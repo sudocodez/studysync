@@ -1,0 +1,172 @@
+/* ── Liquid Glass / Glassmorphism Theme ──
+   Include this file to activate. Remove the <link> to revert. */
+
+/* Base bg for glass context */
+.sidebar,
+.section-card,
+.auth-card,
+.modal-content,
+.help-content,
+.chat-window-body,
+.stats-grid > div,
+.task-item,
+.timeline-item,
+.availability-grid,
+.weekly-timetable,
+.cal-grid,
+.day-card,
+.toast,
+.navbar-glass {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(18px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .section-card,
+[data-theme="dark"] .auth-card,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .help-content,
+[data-theme="dark"] .chat-window-body,
+[data-theme="dark"] .stats-grid > div,
+[data-theme="dark"] .task-item,
+[data-theme="dark"] .timeline-item,
+[data-theme="dark"] .availability-grid,
+[data-theme="dark"] .weekly-timetable,
+[data-theme="dark"] .cal-grid,
+[data-theme="dark"] .day-card,
+[data-theme="dark"] .toast,
+[data-theme="dark"] .navbar-glass {
+    background: rgba(0, 0, 0, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Auth container (login page) */
+.auth-card {
+    padding: 40px !important;
+}
+
+/* Sidebar specific */
+.sidebar {
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .sidebar {
+    border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Modals */
+.modal-content {
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .modal-content {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Task items */
+.task-item {
+    border-radius: var(--radius-sm) !important;
+    padding: 16px !important;
+}
+
+/* Timeline items */
+.timeline-item {
+    border-radius: var(--radius-sm) !important;
+    padding: 16px !important;
+    margin-bottom: 8px !important;
+}
+
+/* Stats grid */
+.stats-grid > div {
+    border-radius: var(--radius-sm) !important;
+    padding: 20px !important;
+}
+
+/* Section cards */
+.section-card {
+    border-radius: var(--radius-sm) !important;
+    padding: 24px !important;
+}
+
+/* Availability grid items */
+.availability-grid label {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+}
+
+[data-theme="dark"] .availability-grid label {
+    background: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Buttons */
+button, .auth-btn, .btn-primary {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+}
+
+/* Inputs */
+input, textarea, select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+    background: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Weekly timetable cells */
+.weekly-timetable th, .weekly-timetable td {
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+[data-theme="dark"] .weekly-timetable th,
+[data-theme="dark"] .weekly-timetable td {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Daily breakdown bars */
+.bar-fill {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Fix background for chart containers */
+.chart-container, .pie-container {
+    background: transparent !important;
+}
+
+/* Profile/help sections */
+.profile-section, .help-section {
+    background: transparent !important;
+}
+
+/* Chat window */
+.chat-window-body {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+}
+
+/* Toast */
+.toast {
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* Calendar */
+.cal-grid, .day-card {
+    border-radius: var(--radius-sm) !important;
+    padding: 12px !important;
+}

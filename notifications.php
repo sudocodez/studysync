@@ -30,6 +30,7 @@ $type_icons = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications | StudySync</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="liquid-glass.css">
     <style>
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
         .page-header h1 { font-size: 24px; font-weight: 600; }
