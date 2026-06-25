@@ -113,17 +113,39 @@ button, .auth-btn, .btn-primary {
 }
 
 /* Inputs */
-input, textarea, select {
-    background: rgba(255, 255, 255, 0.08) !important;
+input, textarea {
+    background: rgba(255, 255, 255, 0.12) !important;
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-primary) !important;
+}
+select {
+    background: #d9d4c8 !important;
+    border: 1px solid #bbb5a8 !important;
+    color: #000000 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+}
+select option {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+[data-theme="dark"] select {
+    background: #2a2a2a !important;
+    border: 1px solid #444 !important;
+    color: #ffffff !important;
+}
+[data-theme="dark"] select option {
+    background: #1a1a1a !important;
+    color: #eeeeee !important;
 }
 
 [data-theme="dark"] input,
-[data-theme="dark"] textarea,
-[data-theme="dark"] select {
-    background: rgba(0, 0, 0, 0.15) !important;
+[data-theme="dark"] textarea {
+    background: rgba(0, 0, 0, 0.25) !important;
+    color: var(--text-primary) !important;
 }
 
 /* Weekly timetable cells */
