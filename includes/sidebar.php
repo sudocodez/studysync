@@ -83,6 +83,13 @@ if (isset($pdo, $_SESSION['user_id'])) {
             </svg>
             <span class="nav-text">Courses</span>
         </a>
+        <a href="progress.php" class="nav-item <?= $current_page === 'progress.php' ? 'active' : '' ?>">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                <line x1="12" y1="2" x2="12" y2="22"/>
+            </svg>
+            <span class="nav-text">Progress</span>
+        </a>
         <a href="#" class="nav-item" onclick="openTaskModal()">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 5v14M5 12h14"/>

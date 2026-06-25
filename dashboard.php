@@ -182,6 +182,17 @@ else $greeting = "Good Evening";
             <?php if (isset($_GET['plan_generated'])): ?>
                 <div style="padding: 12px 16px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius-sm); color: var(--accent); font-size: 13px; margin-bottom: 20px;">Study plan generated — your schedule is ready below.</div>
             <?php endif; ?>
+            <?php if (isset($_GET['error'])): ?>
+                <div style="padding: 12px 16px; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); border-radius: var(--radius-sm); color: var(--danger); font-size: 13px; margin-bottom: 20px;">
+                    <?php if ($_GET['error'] === 'invalid_task'): ?>
+                        ❌ Task not saved. Title, due date, and estimated hours are required.
+                    <?php elseif ($_GET['error'] === 'missing_fields'): ?>
+                        ❌ Please fill in all required fields.
+                    <?php else: ?>
+                        ❌ An error occurred. Please try again.
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
             <!-- Weekly Timetable Summary -->
             <?php if (count($week_plan) > 0): ?>
@@ -441,6 +452,7 @@ else $greeting = "Good Evening";
                 <textarea name="description" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
                 <input type="date" name="due_date" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <input type="number" name="estimated_hours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <div class="modal-error" style="display: none; padding: 10px 12px; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-size: 12px; margin-bottom: 12px;"></div>
                 <div class="modal-buttons">
                     <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
                     <button type="submit" class="btn-primary">Add Task</button>
@@ -475,6 +487,7 @@ else $greeting = "Good Evening";
                 <textarea name="description" id="editTaskDesc" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
                 <input type="date" name="due_date" id="editTaskDue" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
                 <input type="number" name="estimated_hours" id="editTaskHours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <div class="modal-error" style="display: none; padding: 10px 12px; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-size: 12px; margin-bottom: 12px;"></div>
                 <div class="modal-buttons">
                     <button type="button" class="btn-secondary" onclick="closeEditTaskModal()">Cancel</button>
                     <button type="submit" class="btn-primary">Save Changes</button>
@@ -750,6 +763,33 @@ else $greeting = "Good Evening";
                 body: 'task_id=' + taskId + '&status=completed&csrf_token=' + CSRF_TOKEN
             }).then(() => location.reload());
         }
+
+        // Form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.modal form').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    var errorDiv = this.querySelector('.modal-error');
+                    var missing = [];
+                    var fields = this.querySelectorAll('[required]');
+                    fields.forEach(function(f) {
+                        if (!f.value.trim()) {
+                            var label = f.placeholder || f.name || 'Field';
+                            missing.push(label);
+                            f.style.borderColor = 'var(--danger)';
+                        } else {
+                            f.style.borderColor = '';
+                        }
+                    });
+                    if (missing.length > 0) {
+                        e.preventDefault();
+                        errorDiv.style.display = 'block';
+                        errorDiv.textContent = '❌ Missing: ' + missing.join(', ');
+                    } else {
+                        errorDiv.style.display = 'none';
+                    }
+                });
+            });
+        });
     </script>
     <script src="script.js"></script>
 </body>
