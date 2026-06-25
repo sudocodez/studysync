@@ -26,6 +26,9 @@ function loadEnvFile($path) {
 
 loadEnvFile(__DIR__ . '/.env');
 
+// Ensure timezone is always set correctly
+date_default_timezone_set('Africa/Nairobi');
+
 function app_env($key, $default = '') {
     $value = getenv($key);
     return $value === false ? $default : $value;

@@ -323,6 +323,55 @@ else $greeting = "Good Evening";
         </main>
     </div>
 
+    <!-- Summarized Timetable -->
+    <?php
+    $stmt = $pdo->prepare("SELECT sp.*, t.title as task_name, c.course_name
+        FROM study_plan sp
+        LEFT JOIN tasks t ON sp.task_id = t.id
+        LEFT JOIN courses c ON t.course_id = c.id
+        WHERE sp.user_id = ? AND sp.plan_date >= ? AND sp.status = 'pending'
+        ORDER BY sp.plan_date, sp.start_time
+        LIMIT 20");
+    $stmt->execute([$_SESSION['user_id'], $today]);
+    $plan_summary = $stmt->fetchAll();
+    ?>
+    <?php if (count($plan_summary) > 0): ?>
+    <div class="section-card" style="margin-top: 24px; max-width: 960px; margin-left: auto; margin-right: auto;">
+        <div class="section-header">
+            <h2>📋 Upcoming Schedule</h2>
+            <a href="calendar.php" style="font-size: 12px;">View full calendar →</a>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <th style="text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;">Task</th>
+                        <th style="text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;">Course</th>
+                        <th style="text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;">Date</th>
+                        <th style="text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;">Time</th>
+                        <th style="text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($plan_summary as $p): ?>
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 10px 12px;"><?= htmlspecialchars($p['task_name'] ?? $p['task_title']) ?></td>
+                        <td style="padding: 10px 12px; color: var(--text-secondary);"><?= htmlspecialchars($p['course_name'] ?: '-') ?></td>
+                        <td style="padding: 10px 12px;"><?= date('D, M j', strtotime($p['plan_date'])) ?></td>
+                        <td style="padding: 10px 12px;"><?= date('g:i A', strtotime($p['start_time'])) ?> – <?= date('g:i A', strtotime($p['end_time'])) ?></td>
+                        <td style="padding: 10px 12px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: <?= $p['status'] === 'pending' ? 'var(--accent)' : ($p['status'] === 'completed' ? 'var(--success)' : 'var(--warning)') ?>20; color: <?= $p['status'] === 'pending' ? 'var(--accent)' : ($p['status'] === 'completed' ? 'var(--success)' : 'var(--warning)') ?>;">
+                                <?= ucfirst($p['status']) ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Add Task Modal -->
     <div id="taskModal" class="modal">
         <div class="modal-content">
