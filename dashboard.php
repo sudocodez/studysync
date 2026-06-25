@@ -246,6 +246,7 @@ else $greeting = "Good Evening";
                     <div class="section-header">
                         <h2>Today's Schedule</h2>
                         <div style="display: flex; gap: 12px; align-items: center;">
+                            <button onclick="generatePlan()" class="btn-primary" style="padding: 6px 16px; font-size: 12px;">+ Generate Plan</button>
                             <a href="#" onclick="generatePlan()" title="Regenerate full schedule from scratch" style="font-size: 12px;">↻ Regenerate</a>
                             <a href="calendar.php" style="font-size: 12px;">View all →</a>
                         </div>
