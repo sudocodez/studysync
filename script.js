@@ -10,7 +10,7 @@ function fetchAlerts() {
             if (data.alerts && data.alerts.length > 0) {
                 data.alerts.forEach(alert => {
                     showToast(alert.message, alert.type);
-                    if (alert.type === 'now' || alert.type === 'upcoming' || alert.type === 'deadline' || alert.type === 'overdue') {
+                    if ((alert.type === 'now' || alert.type === 'upcoming' || alert.type === 'deadline' || alert.type === 'overdue') && (typeof ALARM_ENABLED === 'undefined' || ALARM_ENABLED)) {
                         triggerAlarm(alert.message, alert.type);
                     }
                 });
