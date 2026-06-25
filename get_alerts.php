@@ -83,6 +83,37 @@ foreach ($upcoming_sessions as $session) {
 }
 
 // ──────────────────────────────────────────────
+// 1b. ALL UPCOMING SCHEDULED SESSIONS (beyond 30 min)
+// ──────────────────────────────────────────────
+$stmt = $pdo->prepare("
+    SELECT sp.* FROM study_plan sp
+    WHERE sp.user_id = ?
+    AND sp.plan_date >= ?
+    AND sp.status = 'pending'
+    AND sp.start_time > ?
+    ORDER BY sp.plan_date, sp.start_time
+    LIMIT 20
+");
+$stmt->execute([$user_id, $current_date, $thirty_min_later]);
+$scheduled_sessions = $stmt->fetchAll();
+
+foreach ($scheduled_sessions as $session) {
+    $title = "Upcoming: {$session['task_title']}";
+    $day_label = date('D, M j', strtotime($session['plan_date']));
+    $time_label = date('g:i A', strtotime($session['start_time']));
+    $message = "{$session['task_title']} scheduled on {$day_label} at {$time_label}.";
+    $inserted = insertNotification($pdo, $user_id, 'upcoming', $title, $message, 'calendar.php');
+    if ($inserted) {
+        $alerts_data[] = [
+            'id' => $session['id'],
+            'type' => 'upcoming',
+            'title' => $title,
+            'message' => $message,
+        ];
+    }
+}
+
+// ──────────────────────────────────────────────
 // 2. TASKS DUE WITHIN 2 DAYS (deadline warning)
 // ──────────────────────────────────────────────
 $day_after_tomorrow = date('Y-m-d', $now_ts + 172800);
