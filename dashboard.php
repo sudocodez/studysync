@@ -711,17 +711,7 @@ else $greeting = "Good Evening";
         function postponeSession(planId) { rescheduleEntry(planId, 'postpone', event.target); }
 
         function startSession(planId) {
-            const btn = event.target;
-            btn.textContent = '⏳ Starting...';
-            apiPost('session.php', 'action=start&plan_id=' + planId)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    btn.textContent = '⏹ End';
-                    btn.style.color = 'var(--danger)';
-                    btn.onclick = function() { stopSession(data.session_id, btn); };
-                }
-            });
+            window.location.href = 'focus_timer.php?plan_id=' + planId;
         }
         
         function stopSession(sessionId, btn) {
@@ -757,10 +747,14 @@ else $greeting = "Good Evening";
         
         // Toggle task completion
         function toggleTask(taskId) {
+            const btn = event.target;
+            const wasCompleted = btn.classList.contains('completed');
+            const newStatus = wasCompleted ? 'pending' : 'completed';
+            btn.classList.toggle('completed');
             fetch('update_task_status.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'task_id=' + taskId + '&status=completed&csrf_token=' + CSRF_TOKEN
+                body: 'task_id=' + taskId + '&status=' + newStatus + '&csrf_token=' + CSRF_TOKEN
             }).then(() => location.reload());
         }
 
