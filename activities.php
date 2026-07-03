@@ -2,7 +2,7 @@
 require_once 'db_config.php';
 
 // Get completed tasks and study sessions
-$stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'completed' ORDER BY due_date DESC LIMIT 20");
+$stmt = $pdo->prepare("SELECT *, COALESCE(completed_at, due_date) AS completed_on FROM tasks WHERE user_id = ? AND status = 'completed' ORDER BY completed_at DESC, due_date DESC LIMIT 20");
 $stmt->execute([$_SESSION['user_id']]);
 $completed_tasks = $stmt->fetchAll();
 
@@ -46,7 +46,7 @@ $completed_sessions = $stmt->fetchAll();
                         <div class="activity-icon">✓</div>
                         <div class="activity-content">
                             <div class="activity-title"><?= htmlspecialchars($task['title']) ?></div>
-                            <div class="activity-date">Completed on <?= date('M d, Y', strtotime($task['due_date'])) ?></div>
+                            <div class="activity-date">Completed on <?= date('M d, Y g:i A', strtotime($task['completed_on'])) ?></div>
                         </div>
                     </div>
                 <?php endforeach; ?>
