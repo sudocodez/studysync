@@ -211,7 +211,6 @@ foreach ($courses as $course) {
     </div>
 
     <script>
-        function openTaskModal() { alert('Use the Dashboard to add tasks.'); }
         function selectColor(el) {
             document.querySelectorAll('.color-opt').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');

@@ -139,8 +139,5 @@ for ($h = 6; $h <= 22; $h++) {
             </div>
         </main>
     </div>
-    <script>
-        function openTaskModal() { alert('Use the Dashboard to add tasks.'); }
-    </script>
 </body>
 </html>

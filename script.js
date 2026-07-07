@@ -189,3 +189,31 @@ window.addEventListener('load', () => {
     var pos = localStorage.getItem('scrollPos');
     if (pos) window.scrollTo(0, parseInt(pos));
 });
+
+// Global form validation for modals
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.modal form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var errorDiv = this.querySelector('.modal-error');
+            if (!errorDiv) return;
+            var missing = [];
+            var fields = this.querySelectorAll('[required]');
+            fields.forEach(function(f) {
+                if (!f.value.trim()) {
+                    var label = f.placeholder || f.name || 'Field';
+                    missing.push(label);
+                    f.style.borderColor = 'var(--danger)';
+                } else {
+                    f.style.borderColor = '';
+                }
+            });
+            if (missing.length > 0) {
+                e.preventDefault();
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = '❌ Missing: ' + missing.join(', ');
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        });
+    });
+});

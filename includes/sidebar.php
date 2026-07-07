@@ -7,6 +7,11 @@ if (isset($pdo, $_SESSION['user_id'])) {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
     $stmt->execute([$_SESSION['user_id']]);
     $sidebar_unread = (int)$stmt->fetchColumn();
+
+    // Fetch courses for the Add Task modal
+    $sidebar_courses = $pdo->prepare("SELECT id, course_name FROM courses WHERE user_id = ? ORDER BY course_name");
+    $sidebar_courses->execute([$_SESSION['user_id']]);
+    $sidebar_courses = $sidebar_courses->fetchAll();
 }
 ?>
 <aside class="sidebar" id="sidebar">
@@ -241,6 +246,39 @@ if (isset($pdo, $_SESSION['user_id'])) {
     </div>
 </div>
 
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Task</h3>
+            <p style="color: var(--text-muted); font-size: 13px;">Create a new study task</p>
+        </div>
+        <form action="add_task.php" method="POST">
+            <?= csrf_field() ?><input type="text" name="title" placeholder="Task title" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+            <select name="type" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <option value="study">Study Session</option>
+                <option value="assignment">Assignment</option>
+                <option value="exam">Exam</option>
+                <option value="quiz">Quiz</option>
+                <option value="project">Project</option>
+            </select>
+            <select name="course_id" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+                <option value="">No Course</option>
+                <?php foreach ($sidebar_courses as $c): ?>
+                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['course_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <textarea name="description" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+            <input type="date" name="due_date" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+            <input type="number" name="estimated_hours" step="0.5" placeholder="Estimated hours" required style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); margin-bottom: 16px;">
+            <div class="modal-error" style="display: none; padding: 10px 12px; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-size: 12px; margin-bottom: 12px;"></div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Add Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .sidebar-modal {
     display: none;
@@ -387,6 +425,16 @@ function closeCalendarSync() {
 
 function helpEscHandler(e) { if (e.key === 'Escape') closeHelpCenter(); }
 function calEscHandler(e) { if (e.key === 'Escape') closeCalendarSync(); }
+
+function openTaskModal() {
+    document.getElementById('taskModal').style.display = 'flex';
+    document.addEventListener('keydown', taskEscHandler);
+}
+function closeTaskModal() {
+    document.getElementById('taskModal').style.display = 'none';
+    document.removeEventListener('keydown', taskEscHandler);
+}
+function taskEscHandler(e) { if (e.key === 'Escape') closeTaskModal(); }
 
 // Load saved theme
 const savedTheme = localStorage.getItem('theme');

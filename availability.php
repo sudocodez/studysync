@@ -264,7 +264,7 @@ foreach ($slots as $slot) {
             btn.classList.add('active');
             document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
         }
-        function openTaskModal() { alert('Use the Dashboard to add tasks.'); }
+
     </script>
 </body>
 </html>
