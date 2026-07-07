@@ -5,3 +5,4 @@
 *.sqlite-shm
 test_*.php
 Microsoft.Services.Store.winmd
+*.docx
