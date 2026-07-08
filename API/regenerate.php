@@ -114,4 +114,7 @@ if ($has_tasks && $has_avail) {
         }
         unset($block);
     }
+    // Sync new sessions to Google Calendar
+    require_once __DIR__ . '/../sync_to_google.php';
+    try { syncAllPlansToGoogle($_SESSION['user_id']); } catch (Exception $e) {}
 }

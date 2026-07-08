@@ -1,6 +1,11 @@
 <?php
 require_once 'google_config.php';
 
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php?error=login_required');
+    exit;
+}
+
 if(isset($_GET['code'])) {
     $code = $_GET['code'];
     
@@ -24,11 +29,18 @@ if(isset($_GET['code'])) {
     $tokens = json_decode($response, true);
     
     if(isset($tokens['access_token'])) {
-        // Save tokens to database
+        $tokens['expires_at'] = time() + ($tokens['expires_in'] ?? 3600);
         $stmt = $pdo->prepare("UPDATE users SET google_calendar_token = ? WHERE id = ?");
         $stmt->execute([json_encode($tokens), $_SESSION['user_id']]);
-        
+
+        $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'success', 'Calendar Connected', 'Your study sessions will now sync to Google Calendar.', 'calendar.php')");
+        $stmt->execute([$_SESSION['user_id']]);
+
         header('Location: dashboard.php?calendar=connected');
+    } elseif (isset($_GET['error'])) {
+        header('Location: dashboard.php?calendar=error&reason=' . urlencode($_GET['error']));
+    } else {
+        header('Location: dashboard.php?calendar=error');
     }
 }
 ?>

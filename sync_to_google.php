@@ -1,24 +1,50 @@
 <?php
 require_once 'google_config.php';
 
+function refreshGoogleToken($tokens) {
+    if (!isset($tokens['refresh_token'])) return $tokens;
+    if (isset($tokens['expires_at']) && $tokens['expires_at'] > time()) return $tokens;
+
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'client_id' => GOOGLE_CLIENT_ID,
+        'client_secret' => GOOGLE_CLIENT_SECRET,
+        'refresh_token' => $tokens['refresh_token'],
+        'grant_type' => 'refresh_token'
+    ]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $new = json_decode($response, true);
+    if (!isset($new['access_token'])) return $tokens;
+
+    $tokens['access_token'] = $new['access_token'];
+    $tokens['expires_at'] = time() + ($new['expires_in'] ?? 3600);
+    if (isset($new['refresh_token'])) $tokens['refresh_token'] = $new['refresh_token'];
+
+    global $pdo;
+    $pdo->prepare("UPDATE users SET google_calendar_token = ? WHERE id = ?")
+        ->execute([json_encode($tokens), $_SESSION['user_id'] ?? 0]);
+
+    return $tokens;
+}
+
 function syncPlanToGoogle($user_id, $plan_id, $title, $start_datetime, $end_datetime) {
     global $pdo;
     
-    // Get user's token
     $stmt = $pdo->prepare("SELECT google_calendar_token FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();
     
-    if(!$user || !$user['google_calendar_token']) {
-        return false;
-    }
+    if(!$user || !$user['google_calendar_token']) return false;
     
     $tokens = json_decode($user['google_calendar_token'], true);
+    $tokens = refreshGoogleToken($tokens);
     $access_token = $tokens['access_token'] ?? null;
     
-    if(!$access_token) {
-        return false;
-    }
+    if(!$access_token) return false;
     
     $timezone = date_default_timezone_get() ?: 'UTC';
 

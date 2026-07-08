@@ -231,7 +231,8 @@ if (isset($pdo, $_SESSION['user_id'])) {
             </div>
             <div class="help-section">
                 <h4>Google Calendar Integration</h4>
-                <p>Coming soon! Future updates will allow syncing your study plan directly with Google Calendar, Outlook, and other calendar services. You'll be able to export your schedule with one click.</p>
+                <p>Sync your study schedule directly to Google Calendar. Study sessions appear as events with reminders.</p>
+                <a href="google_login.php" class="sidebar-modal-btn" style="margin-top: 10px;">🔗 Connect Google Calendar</a>
             </div>
             <div class="help-section">
                 <h4>ICS Export</h4>

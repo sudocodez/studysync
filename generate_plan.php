@@ -121,4 +121,8 @@ if ($session_count > 0) {
     $stmt->execute([$_SESSION['user_id'], $msg]);
 }
 
+// Sync to Google Calendar if connected
+require_once 'sync_to_google.php';
+try { syncAllPlansToGoogle($_SESSION['user_id']); } catch (Exception $e) {}
+
 header('Location: dashboard.php?plan_generated=1');

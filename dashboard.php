@@ -716,5 +716,16 @@ else $greeting = "Good Evening";
         }
     </script>
     <script src="script.js"></script>
+    <?php if (isset($_GET['calendar'])): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($_GET['calendar'] === 'connected'): ?>
+                showToast('✅ Google Calendar connected! Your study sessions will sync automatically.', 'success');
+            <?php elseif ($_GET['calendar'] === 'error'): ?>
+                showToast('❌ Could not connect to Google Calendar. <?= isset($_GET['reason']) ? htmlspecialchars($_GET['reason']) : 'Please try again.' ?>', 'now');
+            <?php endif; ?>
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>
